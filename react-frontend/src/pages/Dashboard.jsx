@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
   Users, 
-  ChalkboardTeacher, 
+  Presentation, 
   BookOpen, 
   Bell, 
   Activity, 
   TrendingUp, 
   Clock, 
   ShieldCheck, 
+  Shield, 
   Zap, 
   Cpu,
   Layers,
@@ -117,7 +118,7 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
           { label: 'Total Students', val: data.stats?.total_students || 0, icon: Users, color: 'indigo', detail: '+12.4% vs prev' },
-          { label: 'Active Faculty', val: data.stats?.total_faculty || 0, icon: Layout, color: 'blue', detail: 'Saturated Nodes' },
+          { label: 'Active Faculty', val: data.stats?.total_faculty || 0, icon: Presentation, color: 'blue', detail: 'Saturated Nodes' },
           { label: 'Curriculum Units', val: data.stats?.total_courses || 0, icon: BookOpen, color: 'amber', detail: 'Modular Frameworks' },
           { label: 'Active Signals', val: data.stats?.active_notices || 0, icon: Bell, color: 'rose', detail: 'Broadcast Priority' }
         ].map((stat, i) => (

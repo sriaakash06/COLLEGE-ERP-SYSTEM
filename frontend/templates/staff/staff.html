@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Staff - College ERP{% endblock %}
+{% block page_title %}Faculty & Staff Directory{% endblock %}
+
+{% block content %}
+<div class="glass p-4 mb-4 d-flex justify-content-between align-items-center">
+    <div class="d-flex align-items-center gap-3">
+        <div class="widget-icon mb-0" style="width: 50px; height: 50px; font-size: 1.2rem;">
+            <i class="fas fa-users-cog text-accent-primary"></i>
+        </div>
+        <div>
+            <h4 class="mb-0 fw-bold">Team Management</h4>
+            <p class="text-muted small mb-0">Manage professors, staff and administration</p>
+        </div>
+    </div>
+    {% if current_user.role == 'admin' %}
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('staff.add_staff') }}" class="btn-premium">
+            <i class="fas fa-plus me-2"></i>New Faculty member
+        </a>
+        <a href="{{ url_for('staff.departments') }}" class="btn glass border-0 py-2 border-primary" style="background: rgba(99,102,241,0.05); color: var(--accent-primary);">
+            <i class="fas fa-shapes me-2"></i>Departments
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<div class="glass p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0 fw-bold">Active Staff Members</h4>
+        <div class="text-muted small">Total: {{ staff|length }} members</div>
+    </div>
+    
+    {% if staff %}
+    <div class="table-responsive">
+        <table class="premium-table">
+            <thead>
+                <tr>
+                    <th>Staff Member</th>
+                    <th>Department</th>
+                    <th>Contact Info</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    {% if current_user.role == 'admin' %}
+                    <th class="text-end">Actions</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for person in staff %}
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="avatar glass p-1 rounded-circle" style="width: 40px; height: 40px; overflow: hidden;">
+                                <img src="https://ui-avatars.com/api/?name={{ person.name }}&background=6366f1&color=fff" class="w-100 h-100 rounded-circle" alt="user">
+                            </div>
+                            <div>
+                                <span class="fw-semibold text-white d-block">{{ person.name }}</span>
+                                <span class="text-muted x-small">ID: {{ person.id[:8] }}...</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="text-white small">{{ person.department_name or 'No Department' }}</span>
+                    </td>
+                    <td>
+                        <div class="d-flex flex-column gap-1">
+                            <span class="text-white small"><i class="fas fa-envelope me-2 text-accent-primary"></i> {{ person.email }}</span>
+                            <span class="text-muted x-small"><i class="fas fa-phone me-2 text-accent-primary"></i> {{ person.phone or 'Contact N/A' }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge glass py-1 px-3 border-0 text-white" style="background: rgba(139, 92, 246, 0.15);">
+                            {{ person.role|capitalize }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if person.status == 'Active' %}
+                        <span class="badge py-2 px-3" style="background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2);">
+                            Active
+                        </span>
+                        {% else %}
+                        <span class="badge py-2 px-3" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.2);">
+                            {{ person.status }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    {% if current_user.role == 'admin' %}
+                    <td class="text-end">
+                        <div class="d-flex gap-2 justify-content-end">
+                            <a href="#" class="btn glass p-2 border-0 hover-scale" style="background: rgba(59, 130, 246, 0.1);">
+                                <i class="fas fa-pen text-info"></i>
+                            </a>
+                            <a href="#" class="btn glass p-2 border-0 hover-scale" style="background: rgba(239, 68, 68, 0.1);">
+                                <i class="fas fa-trash text-danger"></i>
+                            </a>
+                        </div>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <div class="mb-4 opacity-20">
+            <i class="fas fa-users-cog fa-5x"></i>
+        </div>
+        <h5 class="text-muted">No staff members found</h5>
+        {% if current_user.role == 'admin' %}
+        <a href="{{ url_for('staff.add_staff') }}" class="btn-premium mt-3">
+            <i class="fas fa-plus me-2"></i> onboard Faculty
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

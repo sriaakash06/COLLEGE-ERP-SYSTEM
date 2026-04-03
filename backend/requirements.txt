@@ -1,0 +1,11 @@
+flask
+flask-mysqldb
+flask-login
+flask-wtf
+wtforms
+email-validator
+bcrypt
+python-dateutil
+reportlab
+mysql-connector-python
+firebase-admin

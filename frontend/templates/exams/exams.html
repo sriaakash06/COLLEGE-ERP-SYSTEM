@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+
+{% block title %}Examinations - College ERP{% endblock %}
+{% block page_title %}Exam Schedule & Performance{% endblock %}
+
+{% block content %}
+<div class="glass p-4 mb-4 d-flex justify-content-between align-items-center">
+    <div class="d-flex align-items-center gap-3">
+        <div class="widget-icon mb-0" style="width: 50px; height: 50px; font-size: 1.2rem;">
+            <i class="fas fa-file-signature text-accent-primary"></i>
+        </div>
+        <div>
+            <h4 class="mb-0 fw-bold">Academic Assessment</h4>
+            <p class="text-muted small mb-0">Control examinations and manage grading systems</p>
+        </div>
+    </div>
+    {% if current_user.role in ['admin', 'faculty'] %}
+    <a href="{{ url_for('exams.add_exam') }}" class="btn-premium">
+        <i class="fas fa-plus me-2"></i>Schedule Assessment
+    </a>
+    {% endif %}
+</div>
+
+<div class="glass p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="mb-0 fw-bold">Recent & Upcoming Tests</h4>
+        <div class="text-muted small">Total: {{ exams|length }} records found</div>
+    </div>
+    
+    {% if exams %}
+    <div class="table-responsive">
+        <table class="premium-table">
+            <thead>
+                <tr>
+                    <th>Examination</th>
+                    <th>Course & Subject</th>
+                    <th class="text-center">Schedule</th>
+                    <th>Time</th>
+                    <th>Status</th>
+                    {% if current_user.role in ['admin', 'faculty'] %}
+                    <th class="text-end">Actions</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for exam in exams %}
+                <tr>
+                    <td>
+                        <div class="d-flex flex-column">
+                            <span class="text-white fw-semibold">{{ exam.name }}</span>
+                            <span class="text-muted x-small">ID: #EXM-{{ exam.id[:6]|upper }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="d-flex flex-column">
+                            <span class="text-white small">{{ exam.subject_name or 'N/A' }}</span>
+                            <span class="text-muted x-small">{{ exam.course_name or 'General' }}</span>
+                        </div>
+                    </td>
+                    <td class="text-center">
+                        <div class="badge glass border-0 py-2 px-3 text-white" style="background: rgba(99,102,241,0.1); border: 1px solid rgba(99,102,241,0.2);">
+                            <i class="far fa-calendar-alt me-2 text-accent-primary"></i>
+                            {{ exam.exam_date.strftime('%d %b, %Y') if exam.exam_date else 'TBD' }}
+                        </div>
+                    </td>
+                    <td>
+                        <span class="text-white small"><i class="far fa-clock me-2 text-accent-primary opacity-50"></i>{{ exam.duration_minutes or 0 }} Mins</span>
+                    </td>
+                    <td>
+                        {% if exam.status == 'Completed' %}
+                        <span class="badge py-2 px-3" style="background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.2);">
+                            Processed
+                        </span>
+                        {% elif exam.status == 'Scheduled' %}
+                        <span class="badge py-2 px-3 text-white" style="background: rgba(59, 130, 246, 0.15); border: 1px solid rgba(59, 130, 246, 0.2);">
+                            Upcoming
+                        </span>
+                        {% else %}
+                        <span class="badge py-2 px-3 text-muted" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);">
+                            {{ exam.status }}
+                        </span>
+                        {% endif %}
+                    </td>
+                    {% if current_user.role in ['admin', 'faculty'] %}
+                    <td class="text-end">
+                        <div class="d-flex gap-2 justify-content-end">
+                             {% if current_user.role == 'admin' %}
+                            <a href="{{ url_for('exams.edit_exam', exam_id=exam.id) }}" class="btn glass p-2 border-0 hover-scale" style="background: rgba(59, 130, 246, 0.1);">
+                                <i class="fas fa-pen text-info"></i>
+                            </a>
+                            {% endif %}
+                            <a href="{{ url_for('exams.add_result', exam_id=exam.id) }}" class="btn glass px-3 py-2 border-0 text-white x-small" style="background: rgba(16, 185, 129, 0.1);">
+                                <i class="fas fa-clipboard-check text-success me-2"></i>Results
+                            </a>
+                        </div>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <div class="mb-4 opacity-20">
+            <i class="fas fa-clipboard-list fa-5x"></i>
+        </div>
+        <h5 class="text-muted">No assessments scheduled</h5>
+        {% if current_user.role in ['admin', 'faculty'] %}
+        <a href="{{ url_for('exams.add_exam') }}" class="btn-premium mt-3">
+            <i class="fas fa-plus me-2"></i> Set assessment parameters
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

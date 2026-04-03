@@ -1,0 +1,96 @@
+{% extends "base.html" %}
+
+{% block title %}Notice Board - College ERP{% endblock %}
+{% block page_title %}Broadcast Center{% endblock %}
+
+{% block content %}
+<div class="glass p-5 mb-5 border-0 d-flex justify-content-between align-items-center">
+    <div class="d-flex align-items-center gap-4">
+        <div class="widget-icon mb-0 hover-scale" style="width: 70px; height: 70px; font-size: 2rem; background: rgba(99, 102, 241, 0.1); color: var(--accent-primary);">
+            <i class="fas fa-bullhorn text-accent-primary"></i>
+        </div>
+        <div>
+            <h3 class="mb-1 fw-bold">Official Announcements</h3>
+            <p class="text-muted small mb-0">Cross-channel internal and external communications hub</p>
+        </div>
+    </div>
+    {% if current_user.role in ['admin', 'faculty', 'staff'] %}
+    <a href="{{ url_for('notices.add_notice') }}" class="btn-premium">
+        <i class="fas fa-plus me-2"></i>Publish New Broadcast
+    </a>
+    {% endif %}
+</div>
+
+{% if notices %}
+<div class="row g-5">
+    {% for notice in notices %}
+    <div class="col-xl-6">
+        <div class="card glass border-0 overflow-hidden h-100 hover-scale" style="background: rgba(255, 255, 255, 0.02);">
+            <div class="card-header bg-transparent border-bottom border-white-5 py-4 px-5 d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-3">
+                    {% if notice.category == 'Urgent' %}
+                    <span class="dot pulse" style="background: var(--danger);"></span>
+                    {% elif notice.category == 'Exam' %}
+                    <span class="dot pulse" style="background: var(--warning);"></span>
+                    {% else %}
+                    <span class="dot" style="background: var(--accent-primary);"></span>
+                    {% endif %}
+                    <h5 class="mb-0 fw-bold text-white letter-spacing-0">{{ notice.title }}</h5>
+                </div>
+                <span class="badge glass py-2 px-3 border-0 text-muted" style="background: rgba(255,255,255,0.03); font-size: 0.7rem;">
+                    {{ notice.category or 'General' }}
+                </span>
+            </div>
+            <div class="card-body p-5">
+                <div class="d-flex gap-4 mb-4 text-muted small pb-4 border-bottom border-white-5">
+                    <span><i class="fas fa-calendar-day me-2 text-primary"></i> {{ notice.posted_date }}</span>
+                    {% if notice.expiry_date %}
+                    <span><i class="fas fa-hourglass-half me-2 text-warning"></i> Valid till {{ notice.expiry_date }}</span>
+                    {% endif %}
+                </div>
+                <p class="text-white opacity-75 mb-4 line-height-lg" style="font-size: 0.95rem; line-height: 1.8;">
+                    {{ notice.content[:350] }}{% if notice.content|length > 350 %}...{% endif %}
+                </p>
+                
+                <div class="d-flex justify-content-between align-items-center mt-5 pt-3">
+                    <div class="d-flex gap-3">
+                        {% if current_user.role == 'admin' %}
+                        <a href="{{ url_for('notices.edit_notice', notice_id=notice.id) }}" class="btn-premium py-2 px-3" style="background: rgba(99, 102, 241, 0.1); color: var(--accent-primary); box-shadow: none; border-radius: 10px;">
+                            <i class="fas fa-edit me-1"></i> Edit
+                        </a>
+                        <form method="POST" action="{{ url_for('notices.delete_notice', notice_id=notice.id) }}" class="d-inline">
+                            <button type="submit" class="btn-premium py-2 px-3" style="background: rgba(239, 68, 68, 0.1); color: var(--danger); box-shadow: none; border-radius: 10px;" onclick="return confirm('Permanently remove this announcement?')">
+                                <i class="fas fa-trash me-1"></i> Delete
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                    {% if notice.content|length > 350 %}
+                    <a href="#" class="text-primary fw-bold text-decoration-none small">READ FULL BROADCAST <i class="fas fa-arrow-right ms-2"></i></a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="glass text-center py-5 border-0">
+    <div class="mb-5 opacity-10">
+        <i class="fas fa-bullhorn fa-6x"></i>
+    </div>
+    <h4 class="text-muted fw-bold">Broadcast Log Empty</h4>
+    <p class="text-muted small mb-4">Currently no active notices or announcements listed.</p>
+    {% if current_user.role == 'admin' %}
+    <a href="{{ url_for('notices.add_notice') }}" class="btn-premium">
+        <i class="fas fa-plus me-2"></i> Dispatch Initial Broadcast
+    </a>
+    {% endif %}
+</div>
+{% endif %}
+
+<style>
+    .line-height-lg { line-height: 1.8 !important; }
+    .letter-spacing-0 { letter-spacing: -0.01em; }
+</style>
+{% endblock %}

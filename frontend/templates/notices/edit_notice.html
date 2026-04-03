@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block title %}Modify Announcement - College ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="glass card border-0 shadow-lg overflow-hidden">
+                <div class="card-header bg-transparent border-white-5 p-4 d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <div class="widget-icon me-3 bg-accent-soft text-accent-primary">
+                            <i class="fas fa-edit"></i>
+                        </div>
+                        <div>
+                            <h4 class="mb-0 fw-bold">Broadcast Registry Modulation</h4>
+                            <p class="text-muted small mb-0 font-monospace">UUID.{{ notice.id[:12] }}..._MOD_MODE</p>
+                        </div>
+                    </div>
+                    <a href="{{ url_for('notices.notices') }}" class="btn btn-outline-light btn-sm border-white-10 px-3">
+                        <i class="fas fa-times me-2"></i> ABORT
+                    </a>
+                </div>
+
+                <div class="card-body p-5">
+                    <form action="{{ url_for('notices.edit_notice', notice_id=notice.id) }}" method="POST">
+                        <div class="row g-4">
+                            <div class="col-12">
+                                <div class="form-group mb-4">
+                                    <label class="form-label text-muted small fw-bold text-uppercase mb-2">Announcement State [Current]</label>
+                                    <div class="d-flex gap-3">
+                                        <div class="state-option flex-grow-1 p-3 rounded-4 glass border border-white-5 text-center cursor-pointer {% if notice.status == 'Active' %}active{% endif %}" 
+                                             onclick="setStatus('Active')">
+                                            <i class="fas fa-signal me-2 text-success"></i> ACTIVE TRANSMISSION
+                                            <input type="radio" name="status" value="Active" id="statusActive" class="d-none" {% if notice.status == 'Active' %}checked{% endif %}>
+                                        </div>
+                                        <div class="state-option flex-grow-1 p-3 rounded-4 glass border border-white-5 text-center cursor-pointer {% if notice.status == 'Inactive' %}active{% endif %}" 
+                                             onclick="setStatus('Inactive')">
+                                            <i class="fas fa-minus-circle me-2 text-danger"></i> TERMINATED
+                                            <input type="radio" name="status" value="Inactive" id="statusInactive" class="d-none" {% if notice.status == 'Inactive' %}checked{% endif %}>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label class="form-label text-muted small fw-bold text-uppercase mb-2">Subject Header</label>
+                                    <input type="text" name="title" class="form-control form-input py-3" 
+                                           value="{{ notice.title }}" required>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label text-muted small fw-bold text-uppercase mb-2">Transmission Type</label>
+                                    <select name="type" class="form-control form-input" required>
+                                        <option value="Academic" {% if notice.type == 'Academic' %}selected{% endif %}>ACADEMIC</option>
+                                        <option value="Event" {% if notice.type == 'Event' %}selected{% endif %}>EVENT</option>
+                                        <option value="Administrative" {% if notice.type == 'Administrative' %}selected{% endif %}>ADMINISTRATIVE</option>
+                                        <option value="Emergency" {% if notice.type == 'Emergency' %}selected{% endif %}>EMERGENCY</option>
+                                        <option value="Holiday" {% if notice.type == 'Holiday' %}selected{% endif %}>HOLIDAY</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label text-muted small fw-bold text-uppercase mb-2">Priority Level</label>
+                                    <select name="priority" class="form-control form-input" required>
+                                        <option value="Low" {% if notice.priority == 'Low' %}selected{% endif %}>LOW SIGNAL</option>
+                                        <option value="Medium" {% if notice.priority == 'Medium' %}selected{% endif %}>STANDARD</option>
+                                        <option value="High" {% if notice.priority == 'High' %}selected{% endif %}>HIGH PRIORITY</option>
+                                        <option value="Critical" {% if notice.priority == 'Critical' %}selected{% endif %}>CRITICAL / URGENT</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label text-muted small fw-bold text-uppercase mb-2">Target Demographic</label>
+                                    <select name="target_audience" class="form-control form-input" required>
+                                        <option value="All" {% if notice.target_audience == 'All' %}selected{% endif %}>GLOBAL (EVERYONE)</option>
+                                        <option value="Students" {% if notice.target_audience == 'Students' %}selected{% endif %}>STUDENT BASE</option>
+                                        <option value="Staff" {% if notice.target_audience == 'Staff' %}selected{% endif %}>FACULTY & STAFF</option>
+                                        <option value="Parents" {% if notice.target_audience == 'Parents' %}selected{% endif %}>PARENT / GUARDIAN</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="form-label text-muted small fw-bold text-uppercase mb-2">Termination Date (Expiry)</label>
+                                    <input type="date" name="expiry_date" class="form-control form-input" value="{{ notice.expiry_date }}">
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="form-group">
+                                    <label class="form-label text-muted small fw-bold text-uppercase mb-2">Transmission Payload (Content)</label>
+                                    <textarea name="content" class="form-control form-input" rows="6" required>{{ notice.content }}</textarea>
+                                </div>
+                            </div>
+
+                            <div class="col-12 border-top border-white-5 pt-4 mt-5 d-flex gap-3">
+                                <button type="submit" class="btn-premium flex-grow-1 py-3">
+                                    <i class="fas fa-check-double me-2"></i> COMMIT MODULATIONS
+                                </button>
+                                <button type="button" class="btn btn-outline-danger border-white-10 px-4" 
+                                        data-bs-toggle="modal" data-bs-target="#deleteModal">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass border-0 shadow-lg">
+            <div class="modal-body p-5 text-center">
+                <div class="widget-icon mx-auto mb-4 bg-danger-soft text-danger">
+                    <i class="fas fa-radiation-alt"></i>
+                </div>
+                <h4 class="fw-bold mb-3">Terminate Broadcast?</h4>
+                <p class="text-muted small mb-4">This action will permanently purge this announcement signal from the global registry. This operation is irreversible.</p>
+                <div class="d-flex gap-3">
+                    <button type="button" class="btn btn-outline-light border-white-10 flex-grow-1 py-3" data-bs-dismiss="modal">CANCEL</button>
+                    <form action="{{ url_for('notices.delete_notice', notice_id=notice.id) }}" method="POST" class="flex-grow-1">
+                        <button type="submit" class="btn btn-danger w-100 py-3">PURGE DATA</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .form-input {
+        background: rgba(255, 255, 255, 0.02) !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    }
+    .form-input:focus {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border-color: var(--accent-primary) !important;
+    }
+    .state-option {
+        transition: all 0.3s ease;
+        opacity: 0.6;
+    }
+    .state-option:hover {
+        opacity: 1;
+        background: rgba(255, 255, 255, 0.05);
+    }
+    .state-option.active {
+        opacity: 1;
+        background: rgba(99, 102, 241, 0.1);
+        border-color: var(--accent-primary) !important;
+    }
+</style>
+
+<script>
+function setStatus(status) {
+    document.querySelectorAll('.state-option').forEach(el => el.classList.remove('active'));
+    if (status === 'Active') {
+        document.getElementById('statusActive').checked = true;
+        document.querySelector('.state-option:first-child').classList.add('active');
+    } else {
+        document.getElementById('statusInactive').checked = true;
+        document.querySelector('.state-option:nth-child(2)').classList.add('active');
+    }
+}
+</script>
+{% endblock %}

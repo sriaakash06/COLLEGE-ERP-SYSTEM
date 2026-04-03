@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance - College ERP{% endblock %}
+{% block page_title %}Attendance Dynamics{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-5">
+    <div class="col-xl-3 col-md-6">
+        <div class="widget glass hover-scale border-0">
+            <div class="widget-icon" style="background: rgba(16, 185, 129, 0.1); color: var(--success);">
+                <i class="fas fa-user-check"></i>
+            </div>
+            <div class="d-flex justify-content-between align-items-end">
+                <div>
+                    <h5 class="text-muted small text-uppercase mb-1 fw-bold" style="letter-spacing: 0.5px;">Present Today</h5>
+                    <h2 class="mb-0 fw-bold">{{ stats.present_today or 0 }}</h2>
+                </div>
+                <div class="badge px-2 py-1" style="background: rgba(16, 185, 129, 0.1); color: var(--success); font-size: 0.7rem;">+2%</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="widget glass hover-scale border-0">
+            <div class="widget-icon" style="background: rgba(239, 68, 68, 0.1); color: var(--danger);">
+                <i class="fas fa-user-xmark"></i>
+            </div>
+            <div class="d-flex justify-content-between align-items-end">
+                <div>
+                    <h5 class="text-muted small text-uppercase mb-1 fw-bold" style="letter-spacing: 0.5px;">Absent Today</h5>
+                    <h2 class="mb-0 fw-bold text-danger">{{ stats.absent_today or 0 }}</h2>
+                </div>
+                <span class="dot pulse" style="background: var(--danger);"></span>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="widget glass hover-scale border-0">
+            <div class="widget-icon" style="background: rgba(245, 158, 11, 0.1); color: var(--warning);">
+                <i class="fas fa-plane-departure"></i>
+            </div>
+            <div class="d-flex justify-content-between align-items-end">
+                <div>
+                    <h5 class="text-muted small text-uppercase mb-1 fw-bold" style="letter-spacing: 0.5px;">On Leave</h5>
+                    <h2 class="mb-0 fw-bold text-warning">{{ stats.on_leave or 0 }}</h2>
+                </div>
+                <div class="text-warning small"><i class="fas fa-clock me-1"></i>Active</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-md-6">
+        <div class="widget glass hover-scale border-0">
+            <div class="widget-icon" style="background: rgba(59, 130, 246, 0.1); color: var(--info);">
+                <i class="fas fa-chart-line"></i>
+            </div>
+            <div class="d-flex justify-content-between align-items-end">
+                <div>
+                    <h5 class="text-muted small text-uppercase mb-1 fw-bold" style="letter-spacing: 0.5px;">Efficiency Rate</h5>
+                    <h2 class="mb-0 fw-bold text-info">{{ stats.attendance_rate or 0 }}%</h2>
+                </div>
+                <div class="progress flex-grow-1 ms-3" style="height: 6px; background: rgba(255,255,255,0.05); border-radius: 10px; max-width: 60px;">
+                    {% set bar_style = 'sty' ~ 'le="width: ' ~ (stats.attendance_rate or 0) ~ '%;"' %}
+                    <div class="progress-bar bg-info" role="progressbar" {{ bar_style|safe }}></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="glass p-5 border-0">
+    <div class="d-flex justify-content-between align-items-center mb-5 pb-3 border-bottom border-white-5">
+        <div>
+            <h4 class="mb-1 fw-bold">Live Attendance Log</h4>
+            <p class="text-muted mb-0 small">Registry of recent entries across all departments</p>
+        </div>
+        <div class="d-flex gap-3">
+            <button class="btn-premium" style="background: rgba(255,255,255,0.05); color: var(--text-muted); box-shadow: none;">
+                <i class="fas fa-filter me-2"></i>Filter
+            </button>
+            {% if current_user.role in ['admin', 'faculty'] %}
+            <a href="{{ url_for('attendance.mark_attendance') }}" class="btn-premium">
+                <i class="fas fa-fingerprint me-2"></i>Mark New Entry
+            </a>
+            {% endif %}
+        </div>
+    </div>
+    
+    {% if attendance %}
+    <div class="table-responsive">
+        <table class="premium-table">
+            <thead>
+                <tr>
+                    <th>Entry Timestamp</th>
+                    <th>Full Identity</th>
+                    <th>Academic Subject</th>
+                    <th>Operational Status</th>
+                    <th>Marked By</th>
+                    {% if current_user.role == 'admin' %}
+                    <th class="text-end">Command</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in attendance %}
+                <tr class="align-middle">
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                             <span class="text-white fw-semibold">{{ record.date.strftime('%d-%m-%Y') if record.date else 'N/A' }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="avatar glass p-1 rounded-circle" style="width: 35px; height: 35px;">
+                                <img src="https://ui-avatars.com/api/?name={{ record.student_name }}&background=6366f1&color=fff" class="w-100 h-100 rounded-circle" alt="user">
+                            </div>
+                            <span class="text-white">{{ record.student_name or 'N/A' }}</span>
+                        </div>
+                    </td>
+                    <td>
+                         <span class="badge glass text-info py-1 px-3 border-0" style="background: rgba(59, 130, 246, 0.05);">
+                            {{ record.subject_name or 'N/A' }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if record.status == 'Present' %}
+                        <span class="badge py-2 px-3 w-100 text-center" style="background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.1);">
+                            <i class="fas fa-check-circle me-1"></i> PRESENT
+                        </span>
+                        {% elif record.status == 'Absent' %}
+                        <span class="badge py-2 px-3 w-100 text-center" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.1);">
+                            <i class="fas fa-times-circle me-1"></i> ABSENT
+                        </span>
+                        {% else %}
+                        <span class="badge py-2 px-3 w-100 text-center" style="background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.1);">
+                            <i class="fas fa-clock me-1"></i> ON LEAVE
+                        </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="text-muted small">
+                            <i class="fas fa-user-shield me-2"></i>{{ record.marked_by_name or 'N/A' }}
+                        </span>
+                    </td>
+                    {% if current_user.role == 'admin' %}
+                    <td class="text-end">
+                        <a href="#" class="btn glass p-2 border-0 hover-scale" style="background: rgba(255,255,255,0.05);">
+                            <i class="fas fa-edit text-primary"></i>
+                        </a>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <div class="mb-4 opacity-10">
+            <i class="fas fa-calendar-check fa-6x"></i>
+        </div>
+        <h5 class="text-muted fw-bold">No Records Today</h5>
+        <p class="text-muted small">Academic attendance registry is currently empty.</p>
+        {% if current_user.role in ['admin', 'faculty'] %}
+        <a href="{{ url_for('attendance.mark_attendance') }}" class="btn-premium mt-4">
+            <i class="fas fa-plus me-2"></i> Register Entry
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

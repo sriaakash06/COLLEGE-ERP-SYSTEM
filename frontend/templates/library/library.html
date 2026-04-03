@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Library - College ERP{% endblock %}
+{% block page_title %}Digital Book Archive{% endblock %}
+
+{% block content %}
+<!-- Inventory Snapshot -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="glass p-4 h-100 d-flex flex-column justify-content-center">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="widget-icon mb-0" style="background: rgba(99, 102, 241, 0.1);">
+                    <i class="fas fa-atlas text-accent-primary" style="font-size: 1.2rem;"></i>
+                </div>
+                <span class="text-muted small">Library Size</span>
+            </div>
+            <h3 class="mb-0 fw-bold text-white">{{ stats.total_books or 0 }} <span class="fs-6 fw-normal text-muted">Titles</span></h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass p-4 h-100 d-flex flex-column justify-content-center border-start-0">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="widget-icon mb-0" style="background: rgba(16, 185, 129, 0.1);">
+                    <i class="fas fa-check-double text-success" style="font-size: 1.2rem;"></i>
+                </div>
+                <span class="text-muted small">Available</span>
+            </div>
+            <h3 class="mb-0 fw-bold text-white">{{ stats.available_books or 0 }}</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass p-4 h-100 d-flex flex-column justify-content-center border-start-0">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="widget-icon mb-0" style="background: rgba(59, 130, 246, 0.1);">
+                    <i class="fas fa-share-square text-info" style="font-size: 1.2rem;"></i>
+                </div>
+                <span class="text-muted small">Circulating</span>
+            </div>
+            <h3 class="mb-0 fw-bold text-white">{{ stats.issued_books or 0 }}</h3>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="glass p-4 h-100 d-flex flex-column justify-content-center border-start-0">
+            <div class="d-flex align-items-center gap-3 mb-3">
+                <div class="widget-icon mb-0" style="background: rgba(239, 68, 68, 0.1);">
+                    <i class="fas fa-history text-danger" style="font-size: 1.2rem;"></i>
+                </div>
+                <span class="text-muted small">Delayed</span>
+            </div>
+            <h3 class="mb-0 fw-bold text-white">{{ stats.overdue_books or 0 }}</h3>
+        </div>
+    </div>
+</div>
+
+<div class="glass p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div class="d-flex align-items-center gap-3 text-white">
+             <i class="fas fa-swatchbook opacity-50"></i>
+             <h4 class="mb-0 fw-bold">Resource Catalog</h4>
+        </div>
+        {% if current_user.role in ['admin', 'staff'] %}
+        <div class="d-flex gap-2">
+            <a href="#" class="btn glass border-0 px-4 py-2 border-primary" style="background: rgba(99,102,241,0.05); color: var(--accent-primary);">
+                <i class="fas fa-plus me-2"></i>New Title
+            </a>
+            <a href="#" class="btn-premium">
+                <i class="fas fa-hand-holding me-2"></i>Issue Book
+            </a>
+        </div>
+        {% endif %}
+    </div>
+    
+    {% if books %}
+    <div class="table-responsive">
+        <table class="premium-table">
+            <thead>
+                <tr>
+                    <th>Publication</th>
+                    <th>Identifier</th>
+                    <th>Classification</th>
+                    <th class="text-center">Stock</th>
+                    <th>Availability</th>
+                    {% if current_user.role in ['admin', 'staff'] %}
+                    <th class="text-end">Actions</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for book in books %}
+                <tr>
+                    <td>
+                        <div class="d-flex flex-column">
+                            <span class="text-white fw-semibold">{{ book.title }}</span>
+                            <span class="text-muted x-small">By {{ book.author }}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <code class="text-accent-primary" style="background: rgba(99,102,241,0.05); padding: 2px 6px; border-radius: 4px;">{{ book.isbn or 'N/A' }}</code>
+                    </td>
+                    <td>
+                        <span class="text-muted small">{{ book.category or 'General' }}</span>
+                    </td>
+                    <td class="text-center">
+                        <span class="text-white fw-bold">{{ book.available_copies or 0 }}</span>
+                    </td>
+                    <td>
+                        {% if book.available_copies > 0 %}
+                        <div class="d-flex align-items-center gap-2">
+                             <div class="dot bg-success"></div>
+                             <span class="text-success small">In Stock</span>
+                        </div>
+                        {% else %}
+                        <div class="d-flex align-items-center gap-2">
+                             <div class="dot bg-danger"></div>
+                             <span class="text-danger small">Waitlist</span>
+                        </div>
+                        {% endif %}
+                    </td>
+                    {% if current_user.role in ['admin', 'staff'] %}
+                    <td class="text-end">
+                        <div class="d-flex gap-2 justify-content-end">
+                            <a href="#" class="btn glass p-2 border-0 hover-scale" style="background: rgba(59, 130, 246, 0.1);">
+                                <i class="fas fa-pen text-info"></i>
+                            </a>
+                            <a href="#" class="btn glass p-2 border-0 hover-scale" style="background: rgba(16, 185, 129, 0.1);" title="Issue Book">
+                                <i class="fas fa-exchange-alt text-success"></i>
+                            </a>
+                        </div>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+        <div class="mb-4 opacity-20">
+            <i class="fas fa-book-open fa-5x"></i>
+        </div>
+        <h5 class="text-muted">Archive is empty</h5>
+        {% if current_user.role == 'admin' %}
+        <a href="#" class="btn-premium mt-3">
+             Register first Book
+        </a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

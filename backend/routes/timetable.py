@@ -1,0 +1,270 @@
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
+from flask_login import login_required, current_user
+from db import db
+from routes.auth import role_required
+
+timetable_bp = Blueprint('timetable', __name__)
+
+@timetable_bp.route('/')
+@login_required
+def timetable():
+    try:
+        timetable_data = []
+        
+        if current_user.role == 'admin':
+            tt_docs = db.collection('timetable').where('status', '==', 'Active').stream()
+            for doc in tt_docs:
+                entry = doc.to_dict()
+                entry['id'] = doc.id
+                timetable_data.append(entry)
+                
+        elif current_user.role == 'faculty':
+            # Need to get faculty_id for current user
+            faculty_docs = db.collection('faculty').where('user_id', '==', current_user.id).limit(1).get()
+            if len(faculty_docs) > 0:
+                faculty_id = faculty_docs[0].id
+                tt_docs = db.collection('timetable').where('faculty_id', '==', faculty_id).where('status', '==', 'Active').stream()
+                for doc in tt_docs:
+                    entry = doc.to_dict()
+                    entry['id'] = doc.id
+                    timetable_data.append(entry)
+                    
+        elif current_user.role == 'student':
+            # Get student's course and semester
+            student_docs = db.collection('students').where('user_id', '==', current_user.id).limit(1).get()
+            if len(student_docs) > 0:
+                student_id = student_docs[0].id
+                # Check enrollments (assuming student_enrollments collection exists)
+                enroll_docs = db.collection('student_enrollments').where('student_id', '==', student_id).where('status', '==', 'Active').limit(1).get()
+                
+                if len(enroll_docs) > 0:
+                    enroll_data = enroll_docs[0].to_dict()
+                    course_id = enroll_data.get('course_id')
+                    semester = enroll_data.get('semester')
+                    
+                    tt_docs = db.collection('timetable').where('course_id', '==', course_id).where('semester', '==', semester).where('status', '==', 'Active').stream()
+                    for doc in tt_docs:
+                        entry = doc.to_dict()
+                        entry['id'] = doc.id
+                        timetable_data.append(entry)
+        
+        # Enrich data with joins
+        enriched_data = []
+        for entry in timetable_data:
+            # Subject info
+            s_doc = db.collection('subjects').document(entry.get('subject_id')).get()
+            if s_doc.exists:
+                s_data = s_doc.to_dict()
+                entry['subject_name'] = s_data.get('name')
+                entry['subject_code'] = s_data.get('code')
+                
+            # Course info
+            c_doc = db.collection('courses').document(entry.get('course_id')).get()
+            if c_doc.exists:
+                c_data = c_doc.to_dict()
+                entry['course_name'] = c_data.get('name')
+                
+                # Department info
+                d_doc = db.collection('departments').document(c_data.get('department_id')).get()
+                if d_doc.exists:
+                    entry['department_name'] = d_doc.to_dict().get('name')
+            
+            # Faculty info
+            f_doc = db.collection('faculty').document(entry.get('faculty_id')).get()
+            if f_doc.exists:
+                f_data = f_doc.to_dict()
+                u_doc = db.collection('users').document(f_data.get('user_id')).get()
+                if u_doc.exists:
+                    entry['faculty_name'] = u_doc.to_dict().get('name')
+            
+            enriched_data.append(entry)
+            
+        # Group by day
+        days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+        grouped_timetable = {day: [] for day in days}
+        
+        for entry in enriched_data:
+            day = entry.get('day_of_week')
+            if day in grouped_timetable:
+                grouped_timetable[day].append(entry)
+        
+        # Sort each day by start_time
+        for day in days:
+            grouped_timetable[day].sort(key=lambda x: x.get('start_time', ''))
+            
+        return render_template('timetable/timetable.html', 
+                             timetable=grouped_timetable, days=days)
+        
+    except Exception as e:
+        print(f"Timetable error: {e}")
+        flash('Error loading timetable', 'danger')
+        return render_template('timetable/timetable.html', timetable={})
+
+@timetable_bp.route('/add', methods=['GET', 'POST'])
+@login_required
+@role_required('admin')
+def add_timetable():
+    if request.method == 'POST':
+        try:
+            data = {
+                'subject_id': request.form['subject_id'],
+                'faculty_id': request.form['faculty_id'],
+                'course_id': request.form['course_id'],
+                'semester': request.form['semester'],
+                'day_of_week': request.form['day_of_week'],
+                'start_time': request.form['start_time'],
+                'end_time': request.form['end_time'],
+                'room_no': request.form.get('room_no', ''),
+                'academic_year': request.form['academic_year'],
+                'status': 'Active'
+            }
+            
+            db.collection('timetable').add(data)
+            
+            flash('Timetable entry added successfully!', 'success')
+            return redirect(url_for('timetable.timetable'))
+            
+        except Exception as e:
+            print(f"Add timetable error: {e}")
+            flash('Error adding timetable entry', 'danger')
+    
+    # Get dropdown data
+    try:
+        # Courses
+        courses_docs = db.collection('courses').stream()
+        courses = []
+        for doc in courses_docs:
+            c = doc.to_dict()
+            c['id'] = doc.id
+            courses.append(c)
+        courses.sort(key=lambda x: x.get('name', ''))
+        
+        # Subjects
+        subjects_docs = db.collection('subjects').where('status', '==', 'Active').stream()
+        subjects = []
+        for doc in subjects_docs:
+            s = doc.to_dict()
+            s['id'] = doc.id
+            # Add course name for context
+            c_doc = db.collection('courses').document(s.get('course_id')).get()
+            if c_doc.exists:
+                s['course_name'] = c_doc.to_dict().get('name')
+            subjects.append(s)
+        subjects.sort(key=lambda x: (x.get('course_name', ''), x.get('semester', ''), x.get('name', '')))
+        
+        # Faculty
+        faculty_docs = db.collection('faculty').where('status', '==', 'Active').stream()
+        faculty_list = []
+        for doc in faculty_docs:
+            f = doc.to_dict()
+            f['id'] = doc.id
+            u_doc = db.collection('users').document(f.get('user_id')).get()
+            if u_doc.exists:
+                f['name'] = u_doc.to_dict().get('name')
+            d_doc = db.collection('departments').document(f.get('department_id')).get()
+            if d_doc.exists:
+                f['department_name'] = d_doc.to_dict().get('name')
+            faculty_list.append(f)
+        faculty_list.sort(key=lambda x: x.get('name', ''))
+        
+    except Exception as e:
+        print(f"Dropdown load error: {e}")
+        courses = subjects = faculty_list = []
+    
+    return render_template('timetable/add_timetable.html', 
+                         courses=courses, subjects=subjects, faculty=faculty_list)
+
+@timetable_bp.route('/edit/<timetable_id>', methods=['GET', 'POST'])
+@login_required
+@role_required('admin')
+def edit_timetable(timetable_id):
+    if request.method == 'POST':
+        try:
+            data = {
+                'subject_id': request.form['subject_id'],
+                'faculty_id': request.form['faculty_id'],
+                'course_id': request.form['course_id'],
+                'semester': request.form['semester'],
+                'day_of_week': request.form['day_of_week'],
+                'start_time': request.form['start_time'],
+                'end_time': request.form['end_time'],
+                'room_no': request.form.get('room_no', ''),
+                'academic_year': request.form['academic_year'],
+                'status': request.form['status']
+            }
+            
+            db.collection('timetable').document(timetable_id).update(data)
+            
+            flash('Timetable entry updated successfully!', 'success')
+            return redirect(url_for('timetable.timetable'))
+            
+        except Exception as e:
+            print(f"Edit timetable error: {e}")
+            flash('Error updating timetable entry', 'danger')
+    
+    # Get entry and dropdown data
+    try:
+        tt_doc = db.collection('timetable').document(timetable_id).get()
+        if not tt_doc.exists:
+            flash('Timetable entry not found', 'danger')
+            return redirect(url_for('timetable.timetable'))
+            
+        timetable_entry = tt_doc.to_dict()
+        timetable_entry['id'] = tt_doc.id
+        
+        # Reuse dropdown logic
+        courses_docs = db.collection('courses').stream()
+        courses = []
+        for doc in courses_docs:
+            c = doc.to_dict()
+            c['id'] = doc.id
+            courses.append(c)
+        courses.sort(key=lambda x: x.get('name', ''))
+        
+        subjects_docs = db.collection('subjects').where('status', '==', 'Active').stream()
+        subjects = []
+        for doc in subjects_docs:
+            s = doc.to_dict()
+            s['id'] = doc.id
+            c_doc = db.collection('courses').document(s.get('course_id')).get()
+            if c_doc.exists:
+                s['course_name'] = c_doc.to_dict().get('name')
+            subjects.append(s)
+        subjects.sort(key=lambda x: (x.get('course_name', ''), x.get('semester', ''), x.get('name', '')))
+        
+        faculty_docs = db.collection('faculty').where('status', '==', 'Active').stream()
+        faculty_list = []
+        for doc in faculty_docs:
+            f = doc.to_dict()
+            f['id'] = doc.id
+            u_doc = db.collection('users').document(f.get('user_id')).get()
+            if u_doc.exists:
+                f['name'] = u_doc.to_dict().get('name')
+            d_doc = db.collection('departments').document(f.get('department_id')).get()
+            if d_doc.exists:
+                f['department_name'] = d_doc.to_dict().get('name')
+            faculty_list.append(f)
+        faculty_list.sort(key=lambda x: x.get('name', ''))
+        
+        return render_template('timetable/edit_timetable.html', 
+                             timetable_entry=timetable_entry,
+                             courses=courses, subjects=subjects, faculty=faculty_list)
+        
+    except Exception as e:
+        print(f"Edit timetable load error: {e}")
+        flash('Error loading timetable entry', 'danger')
+        return redirect(url_for('timetable.timetable'))
+
+@timetable_bp.route('/delete/<timetable_id>', methods=['POST'])
+@login_required
+@role_required('admin')
+def delete_timetable(timetable_id):
+    try:
+        db.collection('timetable').document(timetable_id).delete()
+        flash('Timetable entry deleted successfully!', 'success')
+        
+    except Exception as e:
+        print(f"Delete timetable error: {e}")
+        flash('Error deleting timetable entry', 'danger')
+    
+    return redirect(url_for('timetable.timetable'))

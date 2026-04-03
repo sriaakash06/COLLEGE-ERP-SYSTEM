@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+
+{% block title %}Mark Attendance - College ERP{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center py-4">
+    <div class="col-xl-10">
+        <div class="glass card border-0 shadow-lg overflow-hidden">
+            <div class="card-header bg-transparent border-white-5 p-4 d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center">
+                    <div class="widget-icon me-3 bg-accent-soft text-accent-primary">
+                        <i class="fas fa-fingerprint shadow-sm"></i>
+                    </div>
+                    <div>
+                        <h4 class="mb-0 fw-bold">Academic Identity Registry</h4>
+                        <p class="text-muted small mb-0 font-monospace">STATUS.ENTRY_INITIALIZED</p>
+                    </div>
+                </div>
+                {% if step == 'mark' %}
+                <a href="{{ url_for('attendance.mark_attendance') }}" class="btn btn-outline-light btn-sm border-white-10 px-3">
+                    <i class="fas fa-arrow-left me-2"></i> RE-SEQUENCE
+                </a>
+                {% endif %}
+            </div>
+
+            <div class="card-body p-5">
+                {% if step == 'select' %}
+                <form method="POST">
+                    <input type="hidden" name="fetch_students" value="1">
+                    
+                    <div class="row g-4 mb-5">
+                        <div class="col-md-7">
+                            <label for="subject_id" class="form-label text-muted small fw-bold text-uppercase mb-2 ps-1">Academic Subject Endpoint</label>
+                            <div class="position-relative">
+                                <i class="fas fa-book-open-reader position-absolute top-50 start-0 translate-middle-y ms-3 text-muted opacity-50"></i>
+                                <select class="form-control form-input ps-5 py-3" id="subject_id" name="subject_id" required style="border-radius: 12px;">
+                                    <option value="" disabled selected>Select educational node...</option>
+                                    {% for sub in subjects %}
+                                    <option value="{{ sub.id }}">{{ sub.course_name }} - {{ sub.name }} ({{ sub.code }})</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-5">
+                            <label for="date" class="form-label text-muted small fw-bold text-uppercase mb-2 ps-1">Chronological Timestamp</label>
+                            <div class="position-relative">
+                                <i class="fas fa-calendar-day position-absolute top-50 start-0 translate-middle-y ms-3 text-muted opacity-50"></i>
+                                <input type="date" class="form-control form-input ps-5 py-3" id="date" name="date" required value="{{ date }}" style="border-radius: 12px;">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end border-top border-white-5 pt-4">
+                        <button type="submit" class="btn-premium px-5 py-3">
+                            PROCEED TO REGISTRY <i class="fas fa-arrow-right ms-2 pulse"></i>
+                        </button>
+                    </div>
+                </form>
+
+                {% elif step == 'mark' %}
+                <div class="registry-header glass mb-5 p-4 rounded-4 border-white-5 d-flex justify-content-between align-items-center">
+                    <div class="d-flex gap-4">
+                        <div class="data-node">
+                            <span class="text-muted smaller fw-bold text-uppercase d-block mb-1">Subject Node</span>
+                            <span class="text-white fw-bold h6">{{ subject.name }} <span class="text-accent-primary font-monospace small">#{{ subject.code }}</span></span>
+                        </div>
+                        <div class="data-node ps-4 border-left-white-10">
+                            <span class="text-muted smaller fw-bold text-uppercase d-block mb-1">Academic Path</span>
+                            <span class="text-white fw-bold h6">{{ subject.course_name }}</span>
+                        </div>
+                        <div class="data-node ps-4 border-left-white-10">
+                            <span class="text-muted smaller fw-bold text-uppercase d-block mb-1">Marked Date</span>
+                            <span class="text-white fw-bold h6">{{ date }}</span>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <div class="text-accent-primary fw-bold display-6 font-monospace mb-0">{{ students|length }}</div>
+                        <span class="text-muted smaller fw-bold text-uppercase">IDENTITIES</span>
+                    </div>
+                </div>
+
+                <form method="POST">
+                    <input type="hidden" name="save_attendance" value="1">
+                    <input type="hidden" name="subject_id" value="{{ subject.id }}">
+                    <input type="hidden" name="date" value="{{ date }}">
+
+                    {% if students %}
+                    <div class="table-responsive">
+                        <table class="premium-table">
+                            <thead>
+                                <tr>
+                                    <th class="ps-0">Registration ID</th>
+                                    <th>Identity Profile</th>
+                                    <th class="text-center">Operational Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for student in students %}
+                                <tr class="align-middle">
+                                    <input type="hidden" name="student_ids" value="{{ student.id }}">
+                                    <td class="ps-0">
+                                        <span class="text-accent-primary fw-bold font-monospace">#{{ student.reg_no }}</span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-3">
+                                            <div class="avatar-glass p-0.5 rounded-circle" style="width: 32px; height: 32px; background: rgba(255,255,255,0.05);">
+                                                <img src="https://ui-avatars.com/api/?name={{ student.name }}&background=random&color=fff" class="w-100 h-100 rounded-circle" alt="user">
+                                            </div>
+                                            <span class="text-white small fw-bold">{{ student.name }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="text-center">
+                                        <div class="status-selector-group glass d-inline-flex p-1 rounded-4 border-white-5">
+                                            <div class="status-item">
+                                                <input type="radio" class="status-radio-input d-none" name="status_{{ student.id }}"
+                                                    id="present_{{ student.id }}" value="Present" {{ 'checked' if
+                                                    existing.get(student.id)=='Present' or not existing.get(student.id) }}>
+                                                <label class="status-label status-present" for="present_{{ student.id }}">
+                                                    <i class="fas fa-check me-1"></i> P
+                                                </label>
+                                            </div>
+
+                                            <div class="status-item ms-1">
+                                                <input type="radio" class="status-radio-input d-none" name="status_{{ student.id }}"
+                                                    id="absent_{{ student.id }}" value="Absent" {{ 'checked' if
+                                                    existing.get(student.id)=='Absent' }}>
+                                                <label class="status-label status-absent" for="absent_{{ student.id }}">
+                                                    <i class="fas fa-times me-1"></i> A
+                                                </label>
+                                            </div>
+
+                                            <div class="status-item ms-1">
+                                                <input type="radio" class="status-radio-input d-none" name="status_{{ student.id }}"
+                                                    id="late_{{ student.id }}" value="Late" {{ 'checked' if
+                                                    existing.get(student.id)=='Late' }}>
+                                                <label class="status-label status-late" for="late_{{ student.id }}">
+                                                    <i class="fas fa-clock me-1"></i> L
+                                                </label>
+                                            </div>
+
+                                            <div class="status-item ms-1">
+                                                <input type="radio" class="status-radio-input d-none" name="status_{{ student.id }}"
+                                                    id="leave_{{ student.id }}" value="Leave" {{ 'checked' if
+                                                    existing.get(student.id)=='Leave' }}>
+                                                <label class="status-label status-leave" for="leave_{{ student.id }}">
+                                                    <i class="fas fa-plane me-1"></i> V
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="d-flex justify-content-end mt-5 border-top border-white-5 pt-4">
+                        <button type="submit" class="btn-premium px-5 py-3 shadow-glow" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                            <i class="fas fa-cloud-upload-alt me-2 shadow-sm"></i> COMMIT REGISTRY TO CLOUD
+                        </button>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <div class="widget-icon mx-auto mb-4 bg-white-5 text-white opacity-10">
+                            <i class="fas fa-users-slash"></i>
+                        </div>
+                        <h4 class="text-muted fw-bold">Zero Identities Detected</h4>
+                        <p class="text-muted small">No students are currently linked to this educational node.</p>
+                    </div>
+                    {% endif %}
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .registry-header {
+        background: rgba(255, 255, 255, 0.02);
+    }
+    .border-left-white-10 {
+        border-left: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .form-input {
+        background: rgba(255, 255, 255, 0.02) !important;
+        border: 1px solid rgba(255, 255, 255, 0.05) !important;
+    }
+    .form-input:focus {
+        background: rgba(255, 255, 255, 0.05) !important;
+        border-color: var(--accent-primary) !important;
+    }
+    .status-label {
+        font-size: 0.7rem;
+        font-weight: 800;
+        padding: 0.5rem 0.8rem;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        color: rgba(255, 255, 255, 0.3);
+        display: block;
+        min-width: 45px;
+        text-align: center;
+    }
+    .status-item:hover .status-label {
+        color: rgba(255, 255, 255, 0.6);
+        background: rgba(255, 255, 255, 0.03);
+    }
+    .status-radio-input:checked + .status-present { background: rgba(16, 185, 129, 0.1); color: #10b981; }
+    .status-radio-input:checked + .status-absent { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+    .status-radio-input:checked + .status-late { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+    .status-radio-input:checked + .status-leave { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+    
+    .status-radio-input:checked + .status-label {
+        transform: scale(1.05);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+    .shadow-glow:hover {
+        box-shadow: 0 0 20px rgba(16, 185, 129, 0.4) !important;
+    }
+    .smaller { font-size: 0.7rem; }
+</style>
+
+<script>
+    if (document.getElementById('date') && !document.getElementById('date').value) {
+        document.getElementById('date').valueAsDate = new Date();
+    }
+</script>
+{% endblock %}

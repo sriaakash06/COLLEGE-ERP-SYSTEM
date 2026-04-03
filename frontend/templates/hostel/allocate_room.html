@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}Allocate Room - College ERP{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">Allocate Room - {{ hostel.name }} ({{ hostel.type }})</h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="student_id" class="form-label">Select Student</label>
+                        <select class="form-select" id="student_id" name="student_id" required>
+                            <option value="">Choose a student...</option>
+                            {% for student in students %}
+                            <option value="{{ student.id }}">{{ student.name }} ({{ student.reg_no }})</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Only active students not currently in a hostel are shown.</div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="room_no" class="form-label">Room Number</label>
+                            <input type="number" class="form-control" id="room_no" name="room_no" min="1"
+                                max="{{ hostel.total_rooms }}" required>
+                            <div class="form-text">Enter room number between 1 and {{ hostel.total_rooms }}.</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="bed_no" class="form-label">Bed Number (Optional)</label>
+                            <input type="text" class="form-control" id="bed_no" name="bed_no"
+                                placeholder="e.g. A, B, 1, 2">
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a href="{{ url_for('hostel.hostel') }}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">Allocate Room</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -7,10 +7,9 @@ import traceback
 
 notices_bp = Blueprint('notices', __name__)
 
-@notices_bp.route('/')
+@notices_bp.route('/data')
 @login_required
-@role_required('admin')
-def notices():
+def notices_data():
     try:
         db = get_firestore()
         notices_list = []
@@ -31,96 +30,82 @@ def notices():
                 
             notices_list.append(n_data)
             
-        return render_template('notices/notices.html', notices=notices_list)
+        return jsonify({'success': True, 'notices': notices_list}), 200
         
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@notices_bp.route('/')
+@login_required
+@role_required('admin')
+def notices():
+    try:
+        return render_template('notices/notices.html', notices=[])
     except Exception as e:
         traceback.print_exc()
         flash('Error loading cloud notices data', 'error')
         return render_template('notices/notices.html', notices=[])
 
-@notices_bp.route('/add', methods=['GET', 'POST'])
-@login_required
-@role_required('admin')
-def add_notice():
-    if request.method == 'POST':
-        try:
-            db = get_firestore()
-            notice_data = {
-                'title': request.form['title'],
-                'content': request.form['content'],
-                'type': request.form['type'],
-                'priority': request.form['priority'],
-                'target_audience': request.form['target_audience'],
-                'expiry_date': request.form.get('expiry_date', ''),
-                'posted_by': str(current_user.id),
-                'status': 'Active',
-                'posted_date': firestore.SERVER_TIMESTAMP
-            }
-            
-            db.collection('notices').document().set(notice_data)
-            flash('Notice posted to cloud successfully!', 'success')
-            return redirect(url_for('notices.notices'))
-            
-        except Exception as e:
-            traceback.print_exc()
-            flash('Error posting notice to cloud', 'error')
-    
-    return render_template('notices/add_notice.html')
 
-@notices_bp.route('/edit/<notice_id>', methods=['GET', 'POST'])
+@notices_bp.route('/add', methods=['POST'])
 @login_required
 @role_required('admin')
-def edit_notice(notice_id):
-    db = get_firestore()
-    doc_ref = db.collection('notices').document(notice_id)
-    
-    if request.method == 'POST':
-        try:
-            update_data = {
-                'title': request.form['title'],
-                'content': request.form['content'],
-                'type': request.form['type'],
-                'priority': request.form['priority'],
-                'target_audience': request.form['target_audience'],
-                'expiry_date': request.form.get('expiry_date', ''),
-                'status': request.form['status']
-            }
-            doc_ref.update(update_data)
-            flash('Notice updated in cloud successfully!', 'success')
-            return redirect(url_for('notices.notices'))
-            
-        except Exception as e:
-            traceback.print_exc()
-            flash('Error updating notice in cloud', 'error')
-    
+def add_notice_json():
     try:
-        doc = doc_ref.get()
-        if not doc.exists:
-            flash('Notice not found in cloud', 'danger')
-            return redirect(url_for('notices.notices'))
-            
-        notice = doc.to_dict()
-        notice['id'] = doc.id
-        return render_template('notices/edit_notice.html', notice=notice)
-        
+        db = get_firestore()
+        data = request.json
+        notice_data = {
+            'title': data['title'],
+            'content': data['content'],
+            'type': data.get('type', 'General'),
+            'priority': data.get('priority', 'Normal'),
+            'target_audience': data.get('target_audience', 'All'),
+            'expiry_date': data.get('expiry_date', ''),
+            'posted_by': str(current_user.id),
+            'status': 'Active',
+            'posted_date': firestore.SERVER_TIMESTAMP
+        }
+        db.collection('notices').add(notice_data)
+        return jsonify({'success': True, 'message': 'Notice posted successfully'}), 201
     except Exception as e:
         traceback.print_exc()
-        flash('Error loading notice from cloud', 'error')
-        return redirect(url_for('notices.notices'))
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@notices_bp.route('/edit/<notice_id>', methods=['POST'])
+@login_required
+@role_required('admin')
+def edit_notice_json(notice_id):
+    try:
+        db = get_firestore()
+        data = request.json
+        update_data = {
+            'title': data['title'],
+            'content': data['content'],
+            'type': data.get('type', 'General'),
+            'priority': data.get('priority', 'Normal'),
+            'target_audience': data.get('target_audience', 'All'),
+            'expiry_date': data.get('expiry_date', ''),
+            'status': data.get('status', 'Active'),
+            'updated_at': firestore.SERVER_TIMESTAMP
+        }
+        db.collection('notices').document(notice_id).update(update_data)
+        return jsonify({'success': True, 'message': 'Notice updated successfully'})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @notices_bp.route('/delete/<notice_id>', methods=['POST'])
 @login_required
 @role_required('admin')
-def delete_notice(notice_id):
+def delete_notice_json(notice_id):
     try:
         db = get_firestore()
         db.collection('notices').document(notice_id).delete()
-        flash('Notice deleted from cloud successfully!', 'success')
+        return jsonify({'success': True, 'message': 'Notice deleted successfully'})
     except Exception as e:
         traceback.print_exc()
-        flash('Error deleting notice from cloud', 'error')
-    
-    return redirect(url_for('notices.notices'))
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @notices_bp.route('/view/<notice_id>')
 @login_required

@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
 from db import get_firestore
 from firebase_admin import firestore
@@ -8,9 +8,8 @@ from datetime import datetime
 
 attendance_bp = Blueprint('attendance', __name__)
 
-@attendance_bp.route('/')
-@login_required
-def attendance():
+@attendance_bp.route('/data')
+def attendance_data():
     try:
         db = get_firestore()
         today_str = datetime.now().strftime('%Y-%m-%d')
@@ -38,7 +37,8 @@ def attendance():
         
         # Recent records
         records = []
-        if current_user.role == 'student':
+        is_student = getattr(current_user, 'role', None) == 'student'
+        if is_student:
             # Get student record
             student_docs = db.collection('students').where('user_id', '==', current_user.id).limit(1).get()
             if student_docs:
@@ -61,115 +61,124 @@ def attendance():
                     att_data['student_name'] = su_doc.to_dict().get('name')
             
             # Fetch subject name
-            sub_doc = db.collection('subjects').document(att_data.get('subject_id')).get()
+            sub_doc = db.collection('subjects').document(att_data.get('subject_id', '')).get()
             if sub_doc.exists:
                 att_data['subject_name'] = sub_doc.to_dict().get('name')
                 
             # Fetch marked by name
-            fac_doc = db.collection('faculty').document(att_data.get('faculty_id')).get()
-            if fac_doc.exists:
-                fu_doc = db.collection('users').document(fac_doc.to_dict().get('user_id')).get()
-                if fu_doc.exists:
-                    att_data['marked_by_name'] = fu_doc.to_dict().get('name')
-            elif att_data.get('faculty_id') == 'admin':
+            faculty_id = att_data.get('faculty_id')
+            if faculty_id and faculty_id != 'admin':
+                fac_doc = db.collection('faculty').document(faculty_id).get()
+                if fac_doc.exists:
+                    fu_doc = db.collection('users').document(fac_doc.to_dict().get('user_id')).get()
+                    if fu_doc.exists:
+                        att_data['marked_by_name'] = fu_doc.to_dict().get('name')
+            else:
                 att_data['marked_by_name'] = 'Admin'
 
             records.append(att_data)
             
-        return render_template('attendance/attendance.html', stats=stats, attendance=records)
+        return jsonify({'stats': stats, 'attendance': records}), 200
         
     except Exception as e:
         traceback.print_exc()
-        flash('Error loading cloud attendance data', 'error')
-        return render_template('attendance/attendance.html', stats={}, attendance=[])
+        return jsonify({'error': str(e)}), 500
 
-@attendance_bp.route('/mark', methods=['GET', 'POST'])
+@attendance_bp.route('/fetch-students', methods=['POST'])
 @login_required
 @role_required('admin', 'faculty')
-def mark_attendance():
-    db = get_firestore()
+def fetch_students_api():
     try:
-        if request.method == 'POST':
-            if 'fetch_students' in request.form:
-                subject_id = request.form.get('subject_id')
-                date = request.form.get('date')
-                
-                if not subject_id or not date:
-                    flash('Please select subject and date', 'warning')
-                    return redirect(url_for('attendance.mark_attendance'))
-
-                # Get subject and course details
-                subject_doc = db.collection('subjects').document(subject_id).get()
-                if not subject_doc.exists:
-                    flash('Subject not found in cloud', 'danger')
-                    return redirect(url_for('attendance.mark_attendance'))
-                
-                subject = subject_doc.to_dict()
-                subject['id'] = subject_doc.id
-                
-                # Course name
-                course_doc = db.collection('courses').document(subject.get('course_id')).get()
-                if course_doc.exists:
-                    subject['course_name'] = course_doc.to_dict().get('name')
-                
-                # Get students enrolled in this course and semester
-                # Schema: 'students' collection should have course_id and semester
-                students = []
-                st_query = db.collection('students').where('course_id', '==', subject.get('course_id')).stream()
-                for s_doc in st_query:
-                    s_data = s_doc.to_dict()
-                    # Check user name
-                    u_doc = db.collection('users').document(s_data.get('user_id')).get()
-                    if u_doc.exists:
-                        s_data['name'] = u_doc.to_dict().get('name')
-                    s_data['id'] = s_doc.id
-                    students.append(s_data)
-                
-                # Existing attendance check
-                existing_map = {}
-                att_query = db.collection('attendance').where('subject_id', '==', subject_id).where('date', '==', date).stream()
-                for a_doc in att_query:
-                    ad = a_doc.to_dict()
-                    existing_map[ad.get('student_id')] = ad.get('status')
-                    
-                return render_template('attendance/mark_attendance.html', 
-                                       step='mark', 
-                                       subject=subject, 
-                                       students=students, 
-                                       date=date,
-                                       existing=existing_map)
-            
-            elif 'save_attendance' in request.form:
-                subject_id = request.form.get('subject_id')
-                date = request.form.get('date')
-                student_ids = request.form.getlist('student_ids')
-                
-                # Faculty ID
-                faculty_id = 'admin'
-                if current_user.role == 'faculty':
-                    fac_docs = db.collection('faculty').where('user_id', '==', current_user.id).limit(1).get()
-                    if fac_docs:
-                        faculty_id = fac_docs[0].id
-                
-                for sid in student_ids:
-                    status = request.form.get(f'status_{sid}')
-                    if status:
-                        # Upsert in Firestore: deterministic ID: subject_student_date
-                        doc_id = f"{subject_id}_{sid}_{date.replace('-', '')}"
-                        att_data = {
-                            'student_id': sid,
-                            'subject_id': subject_id,
-                            'faculty_id': faculty_id,
-                            'date': date,
-                            'status': status,
-                            'updated_at': firestore.SERVER_TIMESTAMP
-                        }
-                        db.collection('attendance').document(doc_id).set(att_data, merge=True)
-                
-                flash('Attendance marked in cloud successfully!', 'success')
-                return redirect(url_for('attendance.attendance'))
+        db = get_firestore()
+        data = request.json
+        subject_id = data.get('subject_id')
+        date = data.get('date')
         
-        # Initial Subjects List
+        if not subject_id or not date:
+            return jsonify({'success': False, 'message': 'Subject and date are required'}), 400
+
+        # Get subject details
+        subject_doc = db.collection('subjects').document(subject_id).get()
+        if not subject_doc.exists:
+            return jsonify({'success': False, 'message': 'Subject not found'}), 404
+        
+        subject = subject_doc.to_dict()
+        subject['id'] = subject_doc.id
+        
+        # Get students enrolled in this course
+        students = []
+        st_query = db.collection('students').where('course_id', '==', subject.get('course_id')).stream()
+        for s_doc in st_query:
+            s_data = s_doc.to_dict()
+            u_doc = db.collection('users').document(s_data.get('user_id')).get()
+            if u_doc.exists:
+                s_data['name'] = u_doc.to_dict().get('name')
+            s_data['id'] = s_doc.id
+            students.append(s_data)
+        
+        # Existing attendance check
+        existing_map = {}
+        att_query = db.collection('attendance').where('subject_id', '==', subject_id).where('date', '==', date).stream()
+        for a_doc in att_query:
+            ad = a_doc.to_dict()
+            existing_map[ad.get('student_id')] = ad.get('status')
+            
+        return jsonify({
+            'success': True,
+            'subject': subject,
+            'students': students,
+            'existing': existing_map
+        }), 200
+        
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@attendance_bp.route('/save', methods=['POST'])
+@login_required
+@role_required('admin', 'faculty')
+def save_attendance_api():
+    try:
+        db = get_firestore()
+        data = request.json
+        subject_id = data.get('subject_id')
+        date = data.get('date')
+        attendance_list = data.get('attendance', []) # List of {student_id: status}
+        
+        # Faculty ID
+        faculty_id = 'admin'
+        if current_user.role == 'faculty':
+            fac_docs = db.collection('faculty').where('user_id', '==', current_user.id).limit(1).get()
+            if fac_docs:
+                faculty_id = fac_docs[0].id
+        
+        for record in attendance_list:
+            sid = record.get('student_id')
+            status = record.get('status')
+            if sid and status:
+                doc_id = f"{subject_id}_{sid}_{date.replace('-', '')}"
+                att_data = {
+                    'student_id': sid,
+                    'subject_id': subject_id,
+                    'faculty_id': faculty_id,
+                    'date': date,
+                    'status': status,
+                    'updated_at': firestore.SERVER_TIMESTAMP
+                }
+                db.collection('attendance').document(doc_id).set(att_data, merge=True)
+        
+        return jsonify({'success': True, 'message': 'Attendance saved successfully'}), 200
+        
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@attendance_bp.route('/subjects')
+@login_required
+@role_required('admin', 'faculty')
+def get_subjects():
+    try:
+        db = get_firestore()
         subjects = []
         sub_query = db.collection('subjects').stream()
         for doc in sub_query:
@@ -179,10 +188,11 @@ def mark_attendance():
             if c_doc.exists:
                 s['course_name'] = c_doc.to_dict().get('name')
             subjects.append(s)
-            
-        return render_template('attendance/mark_attendance.html', step='select', subjects=subjects)
-        
+        return jsonify({'success': True, 'subjects': subjects}), 200
     except Exception as e:
-        traceback.print_exc()
-        flash('An error occurred in cloud sync', 'danger')
-        return redirect(url_for('attendance.attendance'))
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@attendance_bp.route('/')
+@login_required
+def attendance():
+    return render_template('attendance/attendance.html', stats={}, attendance=[])

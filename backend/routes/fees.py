@@ -7,9 +7,9 @@ import traceback
 
 fees_bp = Blueprint('fees', __name__)
 
-@fees_bp.route('/')
+@fees_bp.route('/data')
 @login_required
-def fees():
+def fees_data():
     try:
         db = get_firestore()
         fees_list = []
@@ -45,70 +45,63 @@ def fees():
                 
             fees_list.append(f_data)
             
-        return render_template('fees/fees.html', fees=fees_list)
+        return jsonify({'success': True, 'fees': fees_list}), 200
         
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@fees_bp.route('/')
+@login_required
+def fees():
+    try:
+        return render_template('fees/fees.html', fees=[])
     except Exception as e:
         traceback.print_exc()
         flash('Error loading cloud fees data', 'error')
         return render_template('fees/fees.html', fees=[])
 
-@fees_bp.route('/add', methods=['GET', 'POST'])
+
+@fees_bp.route('/add', methods=['POST'])
 @login_required
 @role_required('admin')
-def add_fee():
+def add_fee_json():
     db = get_firestore()
-    if request.method == 'POST':
-        try:
-            fee_data = {
-                'student_id': request.form['student_id'],
-                'fee_type': request.form['fee_type'],
-                'amount': float(request.form['amount']),
-                'due_date': request.form['due_date'],
-                'academic_year': request.form['academic_year'],
-                'semester': request.form.get('semester', ''),
-                'remarks': request.form.get('remarks', ''),
-                'status': 'Pending',
-                'created_at': firestore.SERVER_TIMESTAMP
-            }
-            db.collection('fees').document().set(fee_data)
-            flash('Fee record added to cloud successfully!', 'success')
-            return redirect(url_for('fees.fees'))
-        except Exception as e:
-            traceback.print_exc()
-            flash('Error adding fee record to cloud', 'error')
-            
-    # Get students
-    students = []
     try:
-        st_query = db.collection('students').stream()
-        for doc in st_query:
-            s_data = doc.to_dict()
-            u_doc = db.collection('users').document(s_data.get('user_id')).get()
-            if u_doc.exists:
-                s_data['name'] = u_doc.to_dict().get('name')
-            s_data['id'] = doc.id
-            students.append(s_data)
-    except:
-        pass
-    return render_template('fees/add_fee.html', students=students)
+        data = request.json
+        fee_data = {
+            'student_id': data['student_id'],
+            'fee_type': data['fee_type'],
+            'amount': float(data['amount']),
+            'due_date': data['due_date'],
+            'academic_year': data['academic_year'],
+            'semester': data.get('semester', ''),
+            'remarks': data.get('remarks', ''),
+            'status': 'Pending',
+            'created_at': firestore.SERVER_TIMESTAMP
+        }
+        db.collection('fees').document().set(fee_data)
+        return jsonify({'success': True, 'message': 'Fee record added successfully'}), 201
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @fees_bp.route('/pay/<fee_id>', methods=['POST'])
 @login_required
 @role_required('admin')
-def mark_paid(fee_id):
+def mark_paid_json(fee_id):
     try:
         db = get_firestore()
+        data = request.json
         update_data = {
             'status': 'Paid',
             'paid_date': firestore.SERVER_TIMESTAMP,
-            'payment_method': request.form['payment_method'],
-            'transaction_id': request.form.get('transaction_id', ''),
+            'payment_method': data.get('payment_method', 'Cash'),
+            'transaction_id': data.get('transaction_id', ''),
             'updated_at': firestore.SERVER_TIMESTAMP
         }
         db.collection('fees').document(fee_id).update(update_data)
-        flash('Fee marked as paid in cloud!', 'success')
+        return jsonify({'success': True, 'message': 'Payment recorded successfully'})
     except Exception as e:
         traceback.print_exc()
-        flash('Error updating fee in cloud', 'error')
-    
-    return redirect(url_for('fees.fees'))
+        return jsonify({'success': False, 'message': str(e)}), 500

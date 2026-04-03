@@ -7,10 +7,10 @@ import traceback
 
 courses_bp = Blueprint('courses', __name__)
 
-@courses_bp.route('/')
+@courses_bp.route('/data')
 @login_required
 @role_required('admin', 'faculty', 'staff')
-def courses():
+def courses_data():
     try:
         db = get_firestore()
         courses_list = []
@@ -44,79 +44,89 @@ def courses():
             
             courses_list.append(c_data)
             
-        return render_template('courses/courses.html', courses=courses_list)
+        return jsonify({'success': True, 'courses': courses_list}), 200
         
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@courses_bp.route('/')
+@login_required
+@role_required('admin', 'faculty', 'staff')
+def courses():
+    try:
+        return render_template('courses/courses.html', courses=[])
     except Exception as e:
         traceback.print_exc()
         flash('Error loading cloud courses data', 'error')
         return render_template('courses/courses.html', courses=[])
 
-@courses_bp.route('/add', methods=['GET', 'POST'])
+
+@courses_bp.route('/add', methods=['POST'])
 @login_required
 @role_required('admin')
-def add_course():
+def add_course_json():
     db = get_firestore()
-    if request.method == 'POST':
-        try:
-            course_data = {
-                'name': request.form['name'],
-                'code': request.form['code'],
-                'department_id': request.form['department_id'],
-                'type': request.form['type'],
-                'duration_years': request.form['duration_years'],
-                'total_semesters': request.form['total_semesters'],
-                'description': request.form['description'],
-                'eligibility': request.form['eligibility'],
-                'fee_structure': float(request.form.get('fee_structure', 0)),
-                'status': request.form.get('status', 'Active'),
-                'created_at': firestore.SERVER_TIMESTAMP
-            }
-            db.collection('courses').document().set(course_data)
-            flash('Course added to cloud successfully!', 'success')
-            return redirect(url_for('courses.courses'))
-        except Exception as e:
-            traceback.print_exc()
-            flash('Error adding course to cloud', 'error')
-    
-    # Get departments
-    departments = []
     try:
-        dept_query = db.collection('departments').order_by('name').stream()
-        for doc in dept_query:
+        data = request.json
+        course_data = {
+            'name': data['name'],
+            'code': data['code'].upper(),
+            'department_id': data['department_id'],
+            'type': data.get('type', 'Undergraduate'),
+            'duration_years': int(data.get('duration_years', 3)),
+            'total_semesters': int(data.get('total_semesters', 6)),
+            'description': data.get('description', ''),
+            'eligibility': data.get('eligibility', ''),
+            'fee_structure': float(data.get('fee_structure', 0)),
+            'status': data.get('status', 'Active'),
+            'created_at': firestore.SERVER_TIMESTAMP
+        }
+        db.collection('courses').document().set(course_data)
+        return jsonify({'success': True, 'message': 'Course added successfully'}), 201
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@courses_bp.route('/departments/data')
+@login_required
+def departments_data():
+    try:
+        db = get_firestore()
+        dept_list = []
+        departments_query = db.collection('departments').order_by('name').stream()
+        for doc in departments_query:
             d = doc.to_dict()
             d['id'] = doc.id
-            departments.append(d)
-    except:
-        pass
-    return render_template('courses/add_course.html', departments=departments)
+            dept_list.append(d)
+        return jsonify({'success': True, 'departments': dept_list})
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
 
-@courses_bp.route('/edit/<course_id>', methods=['GET', 'POST'])
+@courses_bp.route('/edit/<course_id>', methods=['POST'])
 @login_required
 @role_required('admin')
-def edit_course(course_id):
+def edit_course_json(course_id):
     db = get_firestore()
-    doc_ref = db.collection('courses').document(course_id)
-    
-    if request.method == 'POST':
-        try:
-            update_data = {
-                'name': request.form['name'],
-                'code': request.form['code'],
-                'department_id': request.form['department_id'],
-                'type': request.form['type'],
-                'duration_years': request.form['duration_years'],
-                'total_semesters': request.form['total_semesters'],
-                'description': request.form['description'],
-                'eligibility': request.form['eligibility'],
-                'fee_structure': float(request.form.get('fee_structure', 0)),
-                'status': request.form['status']
-            }
-            doc_ref.update(update_data)
-            flash('Course updated in cloud successfully!', 'success')
-            return redirect(url_for('courses.courses'))
-        except Exception as e:
-            traceback.print_exc()
-            flash('Error updating course in cloud', 'error')
+    try:
+        data = request.json
+        update_data = {
+            'name': data['name'],
+            'code': data['code'].upper(),
+            'department_id': data['department_id'],
+            'type': data.get('type', 'Undergraduate'),
+            'duration_years': int(data.get('duration_years', 3)),
+            'total_semesters': int(data.get('total_semesters', 6)),
+            'description': data.get('description', ''),
+            'eligibility': data.get('eligibility', ''),
+            'fee_structure': float(data.get('fee_structure', 0)),
+            'status': data.get('status', 'Active')
+        }
+        db.collection('courses').document(course_id).update(update_data)
+        return jsonify({'success': True, 'message': 'Course updated successfully'})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
             
     try:
         doc = doc_ref.get()
@@ -139,68 +149,43 @@ def edit_course(course_id):
         flash('Error loading course from cloud', 'error')
         return redirect(url_for('courses.courses'))
 
-@courses_bp.route('/subjects/<course_id>')
+@courses_bp.route('/subjects/<course_id>/data')
 @login_required
-@role_required('admin', 'faculty', 'staff')
-def course_subjects(course_id):
+def course_subjects_data(course_id):
     try:
         db = get_firestore()
-        course_doc = db.collection('courses').document(course_id).get()
-        if not course_doc.exists:
-            flash('Course not found in cloud', 'danger')
-            return redirect(url_for('courses.courses'))
-        
-        course = course_doc.to_dict()
-        course['id'] = course_doc.id
-        
         subjects = []
         subjects_query = db.collection('subjects').where('course_id', '==', course_id).order_by('semester').stream()
         for doc in subjects_query:
             s = doc.to_dict()
             s['id'] = doc.id
-            # Count exams
-            exams = db.collection('examinations').where('subject_id', '==', doc.id).stream()
-            s['exam_count'] = len(list(exams))
             subjects.append(s)
-            
-        return render_template('courses/subjects.html', course=course, subjects=subjects)
+        return jsonify({'success': True, 'subjects': subjects})
     except Exception as e:
-        traceback.print_exc()
-        flash('Error loading subjects from cloud', 'error')
-        return redirect(url_for('courses.courses'))
+        return jsonify({'success': False, 'message': str(e)}), 500
 
-@courses_bp.route('/add_subject/<course_id>', methods=['GET', 'POST'])
+@courses_bp.route('/add_subject', methods=['POST'])
 @login_required
 @role_required('admin')
-def add_subject(course_id):
-    db = get_firestore()
-    if request.method == 'POST':
-        try:
-            subject_data = {
-                'name': request.form['name'],
-                'code': request.form['code'],
-                'course_id': course_id,
-                'semester': int(request.form['semester']),
-                'credits': int(request.form['credits']),
-                'type': request.form['type'],
-                'description': request.form['description'],
-                'created_at': firestore.SERVER_TIMESTAMP
-            }
-            db.collection('subjects').document().set(subject_data)
-            flash('Subject added to cloud successfully!', 'success')
-            return redirect(url_for('courses.course_subjects', course_id=course_id))
-        except Exception as e:
-            traceback.print_exc()
-            flash('Error adding subject to cloud', 'error')
-            
+def add_subject_json():
     try:
-        course_doc = db.collection('courses').document(course_id).get()
-        if not course_doc.exists:
-            return redirect(url_for('courses.courses'))
-        course = course_doc.to_dict()
-        return render_template('courses/add_subject.html', course=course, course_id=course_id)
-    except:
-        return redirect(url_for('courses.courses'))
+        db = get_firestore()
+        data = request.json
+        subject_data = {
+            'name': data['name'],
+            'code': data['code'].upper(),
+            'course_id': data['course_id'],
+            'semester': int(data['semester']),
+            'credits': int(data.get('credits', 3)),
+            'type': data.get('type', 'Core'),
+            'description': data.get('description', ''),
+            'created_at': firestore.SERVER_TIMESTAMP
+        }
+        db.collection('subjects').document().set(subject_data)
+        return jsonify({'success': True, 'message': 'Subject added successfully'})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @courses_bp.route('/delete/<course_id>', methods=['POST'])
 @login_required
@@ -256,24 +241,22 @@ def departments():
         flash('Error loading departments from cloud', 'error')
         return render_template('courses/departments.html', departments=[])
 
-@courses_bp.route('/add_department', methods=['GET', 'POST'])
+@courses_bp.route('/add_department', methods=['POST'])
 @login_required
 @role_required('admin')
-def add_department():
-    if request.method == 'POST':
-        try:
-            db = get_firestore()
-            dept_data = {
-                'name': request.form['name'],
-                'code': request.form['code'],
-                'description': request.form['description'],
-                'established_year': request.form['established_year'],
-                'created_at': firestore.SERVER_TIMESTAMP
-            }
-            db.collection('departments').document().set(dept_data)
-            flash('Department added to cloud successfully!', 'success')
-            return redirect(url_for('courses.departments'))
-        except Exception as e:
-            traceback.print_exc()
-            flash('Error adding department to cloud', 'error')
-    return render_template('courses/add_department.html')
+def add_department_json():
+    try:
+        db = get_firestore()
+        data = request.json
+        dept_data = {
+            'name': data['name'],
+            'code': data['code'].upper(),
+            'description': data.get('description', ''),
+            'established_year': data.get('established_year', ''),
+            'created_at': firestore.SERVER_TIMESTAMP
+        }
+        db.collection('departments').document().set(dept_data)
+        return jsonify({'success': True, 'message': 'Department added successfully'})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500

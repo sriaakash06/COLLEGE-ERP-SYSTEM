@@ -7,10 +7,10 @@ import traceback
 
 exams_bp = Blueprint('exams', __name__)
 
-@exams_bp.route('/')
+@exams_bp.route('/data')
 @login_required
 @role_required('admin', 'faculty', 'staff')
-def exams():
+def exams_data():
     try:
         db = get_firestore()
         exams_list = []
@@ -22,7 +22,6 @@ def exams():
             query = exams_ref.order_by('exam_date', direction=firestore.Query.DESCENDING).stream()
         else:
             # Faculty filter (simulated join)
-            # In a real app, we'd filter by subjects taught by faculty
             query = exams_ref.order_by('exam_date', direction=firestore.Query.DESCENDING).stream()
 
         for doc in query:
@@ -46,225 +45,132 @@ def exams():
                 
             exams_list.append(e_data)
             
-        return render_template('exams/exams.html', exams=exams_list)
+        return jsonify({'success': True, 'exams': exams_list}), 200
         
     except Exception as e:
         traceback.print_exc()
-        flash('Error loading cloud exams data', 'error')
-        return render_template('exams/exams.html', exams=[])
+        return jsonify({'success': False, 'message': str(e)}), 500
 
-@exams_bp.route('/add', methods=['GET', 'POST'])
+@exams_bp.route('/save', methods=['POST'])
 @login_required
 @role_required('admin', 'faculty')
-def add_exam():
-    db = get_firestore()
-    if request.method == 'POST':
-        try:
-            exam_data = {
-                'name': request.form['name'],
-                'subject_id': request.form['subject_id'],
-                'course_id': request.form['course_id'],
-                'semester': int(request.form['semester'] or 1),
-                'exam_type': request.form['exam_type'],
-                'max_marks': float(request.form['max_marks']),
-                'exam_date': request.form['exam_date'],
-                'start_time': request.form['start_time'],
-                'duration_minutes': int(request.form['duration_minutes']),
-                'venue': request.form.get('venue', ''),
-                'instructions': request.form.get('instructions', ''),
-                'status': 'Scheduled',
-                'created_by': str(current_user.id),
-                'created_at': firestore.SERVER_TIMESTAMP
-            }
-            db.collection('examinations').document().set(exam_data)
-            flash('Assessment schedule deployed to academic cloud!', 'success')
-            return redirect(url_for('exams.exams'))
-        except Exception as e:
-            traceback.print_exc()
-            flash('Error synchronizing assessment parameters', 'error')
-            
-    # Get courses and subjects for selection
-    courses = []
-    subjects = []
-    try:
-        courses_query = db.collection('courses').order_by('name').stream()
-        for doc in courses_query:
-            c = doc.to_dict()
-            c['id'] = doc.id
-            courses.append(c)
-            
-        subs_query = db.collection('subjects').order_by('name').stream()
-        for doc in subs_query:
-            s = doc.to_dict()
-            s['id'] = doc.id
-            subjects.append(s)
-    except:
-        pass
-    return render_template('exams/add_exam.html', courses=courses, subjects=subjects)
-
-@exams_bp.route('/edit/<exam_id>', methods=['GET', 'POST'])
-@login_required
-@role_required('admin', 'faculty')
-def edit_exam(exam_id):
-    db = get_firestore()
-    exam_ref = db.collection('examinations').document(exam_id)
-    
-    if request.method == 'POST':
-        try:
-            exam_data = {
-                'name': request.form['name'],
-                'subject_id': request.form['subject_id'],
-                'course_id': request.form['course_id'],
-                'semester': int(request.form['semester'] or 1),
-                'exam_type': request.form['exam_type'],
-                'max_marks': float(request.form['max_marks']),
-                'exam_date': request.form['exam_date'],
-                'start_time': request.form['start_time'],
-                'duration_minutes': int(request.form['duration_minutes']),
-                'venue': request.form.get('venue', ''),
-                'instructions': request.form.get('instructions', ''),
-                'status': request.form.get('status', 'Scheduled'),
-                'updated_at': firestore.SERVER_TIMESTAMP
-            }
-            exam_ref.update(exam_data)
-            flash('Assessment parameters updated and synchronized', 'success')
-            return redirect(url_for('exams.exams'))
-        except Exception as e:
-            traceback.print_exc()
-            flash('Error updating assessment synchronize protocol', 'error')
-
-    # Get data
-    exam_doc = exam_ref.get()
-    if not exam_doc.exists:
-        return redirect(url_for('exams.exams'))
-    exam = exam_doc.to_dict()
-    exam['id'] = exam_doc.id
-    
-    courses = []
-    subjects = []
-    try:
-        courses_query = db.collection('courses').order_by('name').stream()
-        for doc in courses_query:
-            c = doc.to_dict()
-            c['id'] = doc.id
-            courses.append(c)
-            
-        subs_query = db.collection('subjects').order_by('name').stream()
-        for doc in subs_query:
-            s = doc.to_dict()
-            s['id'] = doc.id
-            subjects.append(s)
-    except:
-        pass
-        
-    return render_template('exams/edit_exam.html', exam=exam, courses=courses, subjects=subjects)
-
-@exams_bp.route('/results/<exam_id>')
-@login_required
-@role_required('admin', 'faculty', 'staff')
-def exam_results(exam_id):
+def save_exam_api():
     try:
         db = get_firestore()
-        exam_doc = db.collection('examinations').document(exam_id).get()
-        if not exam_doc.exists:
-            flash('Exam not found in cloud', 'danger')
-            return redirect(url_for('exams.exams'))
+        data = request.json
+        exam_data = {
+            'name': data.get('name'),
+            'subject_id': data.get('subject_id'),
+            'course_id': data.get('course_id'),
+            'semester': int(data.get('semester', 1)),
+            'exam_type': data.get('exam_type'),
+            'max_marks': float(data.get('max_marks', 100)),
+            'exam_date': data.get('exam_date'),
+            'start_time': data.get('start_time'),
+            'duration_minutes': int(data.get('duration_minutes', 60)),
+            'venue': data.get('venue', ''),
+            'instructions': data.get('instructions', ''),
+            'status': 'Scheduled',
+            'created_by': current_user.id,
+            'created_at': firestore.SERVER_TIMESTAMP
+        }
+        db.collection('examinations').document().set(exam_data)
+        return jsonify({'success': True, 'message': 'Exam scheduled successfully'}), 200
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@exams_bp.route('/update/<exam_id>', methods=['POST'])
+@login_required
+@role_required('admin', 'faculty')
+def update_exam_api(exam_id):
+    try:
+        db = get_firestore()
+        data = request.json
+        exam_ref = db.collection('examinations').document(exam_id)
+        if not exam_ref.get().exists:
+            return jsonify({'success': False, 'message': 'Exam not found'}), 404
             
-        exam = exam_doc.to_dict()
-        exam['id'] = exam_doc.id
-        
-        # Details
-        sub_doc = db.collection('subjects').document(exam.get('subject_id')).get()
-        if sub_doc.exists:
-            exam['subject_name'] = sub_doc.to_dict().get('name')
-        
+        update_data = {
+            'name': data.get('name'),
+            'subject_id': data.get('subject_id'),
+            'course_id': data.get('course_id'),
+            'semester': int(data.get('semester', 1)),
+            'exam_type': data.get('exam_type'),
+            'max_marks': float(data.get('max_marks', 100)),
+            'exam_date': data.get('exam_date'),
+            'start_time': data.get('start_time'),
+            'duration_minutes': int(data.get('duration_minutes', 60)),
+            'venue': data.get('venue', ''),
+            'instructions': data.get('instructions', ''),
+            'status': data.get('status', 'Scheduled'),
+            'updated_at': firestore.SERVER_TIMESTAMP
+        }
+        exam_ref.update(update_data)
+        return jsonify({'success': True, 'message': 'Exam updated successfully'}), 200
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@exams_bp.route('/results/<exam_id>/data')
+@login_required
+def exam_results_data(exam_id):
+    try:
+        db = get_firestore()
+        # Fetch results and student names
         results = []
         results_query = db.collection('exam_results').where('exam_id', '==', exam_id).stream()
         for doc in results_query:
             res = doc.to_dict()
             res['id'] = doc.id
-            
-            # Fetch student details
             st_doc = db.collection('students').document(res.get('student_id')).get()
             if st_doc.exists:
-                st_data = st_doc.to_dict()
-                res['reg_no'] = st_data.get('reg_no')
-                u_doc = db.collection('users').document(st_data.get('user_id')).get()
+                res['reg_no'] = st_doc.to_dict().get('reg_no')
+                u_doc = db.collection('users').document(st_doc.to_dict().get('user_id')).get()
                 if u_doc.exists:
                     res['student_name'] = u_doc.to_dict().get('name')
             results.append(res)
-            
-        return render_template('exams/results.html', exam=exam, results=results)
+        return jsonify({'success': True, 'results': results}), 200
     except Exception as e:
-        traceback.print_exc()
-        flash('Error loading results from cloud', 'error')
-        return redirect(url_for('exams.exams'))
+        return jsonify({'success': False, 'message': str(e)}), 500
 
-@exams_bp.route('/add_results/<exam_id>', methods=['GET', 'POST'])
+@exams_bp.route('/save-marks', methods=['POST'])
 @login_required
 @role_required('admin', 'faculty')
-def add_results(exam_id):
-    db = get_firestore()
-    if request.method == 'POST':
-        try:
-            student_ids = request.form.getlist('student_id')
-            marks = request.form.getlist('marks_obtained')
-            grades = request.form.getlist('grade')
-            remarks = request.form.getlist('remarks')
-            
-            for i in range(len(student_ids)):
-                if student_ids[i] and marks[i]:
-                    sid = student_ids[i]
-                    doc_id = f"{exam_id}_{sid}"
-                    res_data = {
-                        'exam_id': exam_id,
-                        'student_id': sid,
-                        'marks_obtained': float(marks[i]),
-                        'grade': grades[i] or '',
-                        'remarks': remarks[i] or '',
-                        'updated_at': firestore.SERVER_TIMESTAMP
-                    }
-                    db.collection('exam_results').document(doc_id).set(res_data, merge=True)
-            
-            flash('Results saved to cloud successfully!', 'success')
-            return redirect(url_for('exams.exam_results', exam_id=exam_id))
-        except Exception as e:
-            traceback.print_exc()
-            flash('Error saving results to cloud', 'error')
-            
+def save_marks_api():
     try:
-        exam_doc = db.collection('examinations').document(exam_id).get()
-        if not exam_doc.exists:
-            return redirect(url_for('exams.exams'))
-        exam = exam_doc.to_dict()
-        exam['id'] = exam_doc.id
+        db = get_firestore()
+        data = request.json
+        exam_id = data.get('exam_id')
+        marks_list = data.get('marks', []) # List of {student_id, marks_obtained, grade, remarks}
         
-        # Get students enrolled
-        students = []
-        st_query = db.collection('students').where('course_id', '==', exam.get('course_id')).stream()
-        for doc in st_query:
-            s_data = doc.to_dict()
-            u_doc = db.collection('users').document(s_data.get('user_id')).get()
-            if u_doc.exists:
-                s_data['student_name'] = u_doc.to_dict().get('name')
-            s_data['id'] = doc.id
-            students.append(s_data)
-            
-        return render_template('exams/add_results.html', exam=exam, students=students)
-    except:
-        return redirect(url_for('exams.exams'))
+        for entry in marks_list:
+            sid = entry.get('student_id')
+            if sid:
+                doc_id = f"{exam_id}_{sid}"
+                res_data = {
+                    'exam_id': exam_id,
+                    'student_id': sid,
+                    'marks_obtained': float(entry.get('marks_obtained', 0)),
+                    'grade': entry.get('grade', ''),
+                    'remarks': entry.get('remarks', ''),
+                    'updated_at': firestore.SERVER_TIMESTAMP
+                }
+                db.collection('exam_results').document(doc_id).set(res_data, merge=True)
+        return jsonify({'success': True, 'message': 'Marks updated successfully'}), 200
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
 
-@exams_bp.route('/my_results')
+@exams_bp.route('/my-results/data')
 @login_required
 @role_required('student')
-def my_results():
+def my_results_data():
     try:
         db = get_firestore()
         st_docs = db.collection('students').where('user_id', '==', current_user.id).limit(1).get()
-        if not st_docs:
-            flash('Student record not found', 'danger')
-            return redirect(url_for('auth.dashboard'))
-            
+        if not st_docs: return jsonify({'success': False, 'message': 'Student record not found'}), 404
+        
         student_id = st_docs[0].id
         results = []
         res_query = db.collection('exam_results').where('student_id', '==', student_id).stream()
@@ -273,18 +179,21 @@ def my_results():
             ex_doc = db.collection('examinations').document(res.get('exam_id')).get()
             if ex_doc.exists:
                 ex = ex_doc.to_dict()
-                res['exam_name'] = ex.get('name')
-                res['exam_type'] = ex.get('exam_type')
-                res['max_marks'] = ex.get('max_marks')
-                res['exam_date'] = ex.get('exam_date')
-                
+                res.update({
+                    'exam_name': ex.get('name'),
+                    'exam_type': ex.get('exam_type'),
+                    'max_marks': ex.get('max_marks'),
+                    'exam_date': ex.get('exam_date')
+                })
                 sub_doc = db.collection('subjects').document(ex.get('subject_id')).get()
                 if sub_doc.exists:
                     res['subject_name'] = sub_doc.to_dict().get('name')
             results.append(res)
-            
-        return render_template('exams/my_results.html', results=results)
+        return jsonify({'success': True, 'results': results}), 200
     except Exception as e:
-        traceback.print_exc()
-        flash('Error loading results from cloud', 'error')
-        return render_template('exams/my_results.html', results=[])
+        return jsonify({'success': False, 'message': str(e)}), 500
+
+@exams_bp.route('/')
+@login_required
+def exams_view():
+    return render_template('exams/exams.html', exams=[])

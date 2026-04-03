@@ -8,6 +8,20 @@ from functools import wraps
 
 auth_bp = Blueprint('auth', __name__)
 
+@auth_bp.route('/me')
+def get_current_user():
+    if current_user.is_authenticated:
+        return jsonify({
+            'authenticated': True,
+            'user': {
+                'id': current_user.id,
+                'name': current_user.name,
+                'email': current_user.email,
+                'role': current_user.role
+            }
+        }), 200
+    return jsonify({'authenticated': False}), 401
+
 # Role-based access control decorator
 def role_required(*roles):
     def decorator(f):
@@ -112,9 +126,9 @@ def register():
             
     return render_template('register.html')
 
-@auth_bp.route('/dashboard')
+@auth_bp.route('/dashboard/data')
 @login_required
-def dashboard():
+def dashboard_data():
     try:
         db = get_firestore()
         stats = {}
@@ -126,7 +140,7 @@ def dashboard():
                 stats['total_courses'] = len(list(db.collection('courses').stream()))
                 stats['active_notices'] = len(list(db.collection('notices').where('status', '==', 'Active').stream()))
             elif current_user.role == 'student':
-                # Similar logic for students...
+                # Student stats
                 pass
             
             # Get notices
@@ -134,20 +148,77 @@ def dashboard():
             recent_notices = []
             for doc in notices_query:
                 n = doc.to_dict()
-                recent_notices.append((n.get('title'), n.get('content'), n.get('posted_date')))
+                recent_notices.append({
+                    'title': n.get('title'),
+                    'content': n.get('content'),
+                    'posted_date': n.get('posted_date')
+                })
         else:
             recent_notices = []
 
-        return render_template('dashboard.html', stats=stats, recent_notices=recent_notices)
+        return jsonify({'stats': stats, 'recent_notices': recent_notices}), 200
+        
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+@auth_bp.route('/dashboard')
+@login_required
+def dashboard():
+    try:
+        # Reusing the logic or just returning template
+        return render_template('dashboard.html', stats={}, recent_notices=[])
         
     except Exception as e:
         traceback.print_exc()
         flash('Error loading cloud data', 'error')
         return render_template('dashboard.html', stats={}, recent_notices=[])
 
+@auth_bp.route('/profile/data')
+@login_required
+def profile_data():
+    try:
+        db = get_firestore()
+        user_info = {
+            'id': current_user.id,
+            'name': current_user.name,
+            'email': current_user.email,
+            'role': current_user.role
+        }
+        
+        # Role-specific extra info
+        if current_user.role == 'student':
+            st_docs = db.collection('students').where('user_id', '==', current_user.id).limit(1).get()
+            if st_docs:
+                st_data = st_docs[0].to_dict()
+                user_info.update({
+                    'reg_no': st_data.get('reg_no'),
+                    'phone': st_data.get('phone'),
+                    'address': st_data.get('address'),
+                    'dob': st_data.get('dob')
+                })
+        elif current_user.role == 'faculty':
+            f_docs = db.collection('faculty').where('user_id', '==', current_user.id).limit(1).get()
+            if f_docs:
+                f_data = f_docs[0].to_dict()
+                user_info.update({
+                    'faculty_id': f_data.get('id'),
+                    'designation': f_data.get('designation'),
+                    'department_id': f_data.get('department_id')
+                })
+        
+        return jsonify({'success': True, 'profile': user_info}), 200
+        
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
+
 @auth_bp.route('/logout')
 @login_required
 def logout():
     logout_user()
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+        return jsonify({'success': True}), 200
     flash('You have been logged out successfully.', 'info')
     return redirect(url_for('auth.login'))
+

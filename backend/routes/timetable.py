@@ -1,14 +1,17 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify
 from flask_login import login_required, current_user
-from db import db
+from db import get_firestore
+from firebase_admin import firestore
 from routes.auth import role_required
+import traceback
 
 timetable_bp = Blueprint('timetable', __name__)
 
-@timetable_bp.route('/')
+@timetable_bp.route('/data')
 @login_required
-def timetable():
+def timetable_data():
     try:
+        db = get_firestore()
         timetable_data = []
         
         if current_user.role == 'admin':
@@ -19,7 +22,6 @@ def timetable():
                 timetable_data.append(entry)
                 
         elif current_user.role == 'faculty':
-            # Need to get faculty_id for current user
             faculty_docs = db.collection('faculty').where('user_id', '==', current_user.id).limit(1).get()
             if len(faculty_docs) > 0:
                 faculty_id = faculty_docs[0].id
@@ -30,17 +32,15 @@ def timetable():
                     timetable_data.append(entry)
                     
         elif current_user.role == 'student':
-            # Get student's course and semester
             student_docs = db.collection('students').where('user_id', '==', current_user.id).limit(1).get()
             if len(student_docs) > 0:
                 student_id = student_docs[0].id
-                # Check enrollments (assuming student_enrollments collection exists)
-                enroll_docs = db.collection('student_enrollments').where('student_id', '==', student_id).where('status', '==', 'Active').limit(1).get()
+                enroll_docs = db.collection('enrollments').where('student_id', '==', student_id).where('status', '==', 'Active').limit(1).get()
                 
                 if len(enroll_docs) > 0:
                     enroll_data = enroll_docs[0].to_dict()
                     course_id = enroll_data.get('course_id')
-                    semester = enroll_data.get('semester')
+                    semester = enroll_data.get('semester', '1')
                     
                     tt_docs = db.collection('timetable').where('course_id', '==', course_id).where('semester', '==', semester).where('status', '==', 'Active').stream()
                     for doc in tt_docs:
@@ -92,41 +92,53 @@ def timetable():
         for day in days:
             grouped_timetable[day].sort(key=lambda x: x.get('start_time', ''))
             
-        return render_template('timetable/timetable.html', 
-                             timetable=grouped_timetable, days=days)
+        return jsonify({
+            'success': True,
+            'timetable': grouped_timetable,
+            'days': days
+        }), 200
         
     except Exception as e:
-        print(f"Timetable error: {e}")
-        flash('Error loading timetable', 'danger')
-        return render_template('timetable/timetable.html', timetable={})
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
 
-@timetable_bp.route('/add', methods=['GET', 'POST'])
+@timetable_bp.route('/')
+@login_required
+def timetable():
+    try:
+        return render_template('timetable/timetable.html', timetable={}, days=[])
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        flash('Error loading timetable', 'danger')
+        return render_template('timetable/timetable.html', timetable={}, days=[])
+
+
+@timetable_bp.route('/add', methods=['POST'])
 @login_required
 @role_required('admin')
-def add_timetable():
-    if request.method == 'POST':
-        try:
-            data = {
-                'subject_id': request.form['subject_id'],
-                'faculty_id': request.form['faculty_id'],
-                'course_id': request.form['course_id'],
-                'semester': request.form['semester'],
-                'day_of_week': request.form['day_of_week'],
-                'start_time': request.form['start_time'],
-                'end_time': request.form['end_time'],
-                'room_no': request.form.get('room_no', ''),
-                'academic_year': request.form['academic_year'],
-                'status': 'Active'
-            }
-            
-            db.collection('timetable').add(data)
-            
-            flash('Timetable entry added successfully!', 'success')
-            return redirect(url_for('timetable.timetable'))
-            
-        except Exception as e:
-            print(f"Add timetable error: {e}")
-            flash('Error adding timetable entry', 'danger')
+def add_timetable_json():
+    try:
+        db = get_firestore()
+        data = request.json
+        tt_data = {
+            'subject_id': data['subject_id'],
+            'faculty_id': data['faculty_id'],
+            'course_id': data['course_id'],
+            'semester': data['semester'],
+            'day_of_week': data['day_of_week'],
+            'start_time': data['start_time'],
+            'end_time': data['end_time'],
+            'room_no': data.get('room_no', ''),
+            'academic_year': data.get('academic_year', '2024-25'),
+            'status': 'Active',
+            'created_at': firestore.SERVER_TIMESTAMP
+        }
+        db.collection('timetable').add(tt_data)
+        return jsonify({'success': True, 'message': 'Timetable entry added successfully'}), 201
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
     
     # Get dropdown data
     try:
@@ -174,33 +186,31 @@ def add_timetable():
     return render_template('timetable/add_timetable.html', 
                          courses=courses, subjects=subjects, faculty=faculty_list)
 
-@timetable_bp.route('/edit/<timetable_id>', methods=['GET', 'POST'])
+@timetable_bp.route('/edit/<timetable_id>', methods=['POST'])
 @login_required
 @role_required('admin')
-def edit_timetable(timetable_id):
-    if request.method == 'POST':
-        try:
-            data = {
-                'subject_id': request.form['subject_id'],
-                'faculty_id': request.form['faculty_id'],
-                'course_id': request.form['course_id'],
-                'semester': request.form['semester'],
-                'day_of_week': request.form['day_of_week'],
-                'start_time': request.form['start_time'],
-                'end_time': request.form['end_time'],
-                'room_no': request.form.get('room_no', ''),
-                'academic_year': request.form['academic_year'],
-                'status': request.form['status']
-            }
-            
-            db.collection('timetable').document(timetable_id).update(data)
-            
-            flash('Timetable entry updated successfully!', 'success')
-            return redirect(url_for('timetable.timetable'))
-            
-        except Exception as e:
-            print(f"Edit timetable error: {e}")
-            flash('Error updating timetable entry', 'danger')
+def edit_timetable_json(timetable_id):
+    try:
+        db = get_firestore()
+        data = request.json
+        update_data = {
+            'subject_id': data['subject_id'],
+            'faculty_id': data['faculty_id'],
+            'course_id': data['course_id'],
+            'semester': data['semester'],
+            'day_of_week': data['day_of_week'],
+            'start_time': data['start_time'],
+            'end_time': data['end_time'],
+            'room_no': data.get('room_no', ''),
+            'academic_year': data.get('academic_year', '2024-25'),
+            'status': data.get('status', 'Active'),
+            'updated_at': firestore.SERVER_TIMESTAMP
+        }
+        db.collection('timetable').document(timetable_id).update(update_data)
+        return jsonify({'success': True, 'message': 'Timetable entry updated successfully'})
+    except Exception as e:
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
     
     # Get entry and dropdown data
     try:
@@ -258,13 +268,11 @@ def edit_timetable(timetable_id):
 @timetable_bp.route('/delete/<timetable_id>', methods=['POST'])
 @login_required
 @role_required('admin')
-def delete_timetable(timetable_id):
+def delete_timetable_json(timetable_id):
     try:
+        db = get_firestore()
         db.collection('timetable').document(timetable_id).delete()
-        flash('Timetable entry deleted successfully!', 'success')
-        
+        return jsonify({'success': True, 'message': 'Timetable entry deleted successfully'})
     except Exception as e:
-        print(f"Delete timetable error: {e}")
-        flash('Error deleting timetable entry', 'danger')
-    
-    return redirect(url_for('timetable.timetable'))
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500

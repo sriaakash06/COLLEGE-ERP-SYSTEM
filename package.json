@@ -1,0 +1,24 @@
+{
+  "name": "college_management_erp",
+  "version": "1.0.0",
+  "description": "A comprehensive college management system inspired by modern university websites like SRM Institute. Built with Flask, MySQL, and Bootstrap 5.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "npm --prefix react-frontend run dev",
+    "build": "npm --prefix react-frontend run build",
+    "install-all": "npm install && npm --prefix react-frontend install",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sriaakash06/COLLEGE-ERP-SYSTEM.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/sriaakash06/COLLEGE-ERP-SYSTEM/issues"
+  },
+  "homepage": "https://github.com/sriaakash06/COLLEGE-ERP-SYSTEM#readme"
+}

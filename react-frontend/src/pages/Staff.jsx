@@ -103,14 +103,14 @@ const Staff = () => {
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div className="flex items-center gap-6">
           <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shadow-lg shadow-indigo-500/10 relative overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <ShieldCheck className="w-8 h-8 text-indigo-400 group-hover:scale-110 transition-transform" />
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <UserRound className="w-8 h-8 text-indigo-400 group-hover:scale-110 transition-transform" />
           </div>
           <div>
-            <h1 className="text-3xl md:text-4xl font-black text-gradient-primary tracking-tight italic uppercase">HUMAN CAPITAL NEXUS</h1>
+            <h1 className="text-3xl md:text-4xl font-black text-gradient-primary tracking-tight italic">PERSONNEL HUB</h1>
             <p className="text-text-muted mt-1 font-medium flex items-center gap-2">
-              <Cpu className="w-4 h-4 text-indigo-400" />
-              Institutional workforce management and onboarding v2.4
+              <Activity className="w-4 h-4 text-emerald-400" />
+              Institutional human resource and deployment matrix
             </p>
           </div>
         </div>
@@ -132,10 +132,10 @@ const Staff = () => {
       {/* Persistence Analytics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
-          { label: 'Total Personnel', val: staff.length, icon: UserRound, color: 'indigo', detail: 'Active Entities' },
-          { label: 'Active Depts', val: departments.length, icon: Building2, color: 'blue', detail: 'Functional Units' },
-          { label: 'New Deployment', val: staff.filter(s => new Date(s.timestamp?.seconds * 1000).getMonth() === new Date().getMonth()).length, icon: Clock, color: 'emerald', detail: 'Current Cycle' },
-          { label: 'Global Faculty', val: staff.filter(s => s.role === 'Admin').length, icon: Globe, color: 'purple', detail: 'Admin Oversight' }
+          { label: 'Active Deployment', val: staff.length, icon: UserCheck, color: 'emerald', detail: 'Personnel Online' },
+          { label: 'Sectors Active', val: departments.length, icon: Layers, color: 'indigo', detail: 'Institutional Units' },
+          { label: 'Admin Override', val: staff.filter(s => s.role === 'admin').length, icon: ShieldCheck, color: 'amber', detail: 'Privileged Access' },
+          { label: 'System Uptime', val: '99.9%', icon: Activity, color: 'rose', detail: 'Registry: Nominal' }
         ].map((stat, i) => (
           <div key={i} className="glass-card p-6 group hover:translate-y-[-4px] transition-all">
             <div className="flex items-center justify-between mb-4">

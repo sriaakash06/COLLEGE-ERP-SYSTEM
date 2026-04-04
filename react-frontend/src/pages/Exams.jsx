@@ -151,8 +151,12 @@ const Exams = ({ currentUser }) => {
 
   if (loading && activeTab !== 'marks_entry') {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="w-12 h-12 rounded-full border-2 border-amber-500/20 border-t-amber-500 animate-spin"></div>
+      <div className="flex flex-col items-center justify-center min-h-[500px] animate-pulse">
+        <div className="w-20 h-20 rounded-[2rem] bg-amber-500/10 flex items-center justify-center border border-amber-500/20 shadow-2xl relative mb-4">
+           <Trophy className="w-10 h-10 text-amber-500" />
+           <div className="absolute inset-0 border-2 border-t-amber-500 border-transparent rounded-[2.1rem] animate-spin"></div>
+        </div>
+        <p className="text-[10px] font-black text-amber-500 uppercase tracking-[0.5em] italic">DECRYPTING ASSESSMENT LEDGER...</p>
       </div>
     );
   }
@@ -237,12 +241,21 @@ const Exams = ({ currentUser }) => {
       {/* Main Container Area */}
       <div className="animate-fade-in">
         {showAddExam ? (
-          <div className="glass-card p-8 md:p-12 border-2 border-amber-500/20 animate-scale-in">
-            <div className="flex items-center justify-between mb-12">
-              <h2 className="text-3xl font-black italic text-gradient-primary flex items-center gap-4">
-                 <Zap className="w-8 h-8 text-amber-400" />
-                 DEPLOY ASSESSMENT VECTOR
-              </h2>
+          <div className="glass-card p-8 md:p-14 relative overflow-hidden bg-gradient-to-br from-amber-900/10 to-transparent border-2 border-amber-500/20 animate-scale-in">
+            <div className="absolute top-0 right-0 p-12 opacity-5">
+               <Zap className="w-48 h-48 text-amber-500" />
+            </div>
+            
+            <div className="flex items-center justify-between mb-16 relative z-10">
+              <div>
+                <h2 className="text-4xl font-black italic text-white flex items-center gap-6 tracking-tighter uppercase">
+                   <div className="p-4 rounded-2xl bg-amber-500/20 border border-amber-500/40">
+                      <Trophy className="w-8 h-8 text-amber-400" />
+                   </div>
+                   DEPLOY ASSESSMENT VECTOR
+                </h2>
+                <p className="text-[10px] text-amber-400/60 font-black uppercase tracking-[0.4em] mt-3 pl-20">Temporal Node Initialization Phase // Security Vetted</p>
+              </div>
               <div className="hidden md:flex gap-4">
                 <div className="flex items-center gap-2 text-[10px] font-black uppercase text-amber-400/40">
                   <ShieldCheck className="w-4 h-4" /> SECURE DEPLOYMENT
@@ -344,110 +357,133 @@ const Exams = ({ currentUser }) => {
             </form>
           </div>
         ) : activeTab === 'schedule' ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {exams.map(exam => (
-              <div key={exam.id} className="glass-card group p-8 hover:translate-y-[-4px] transition-all relative overflow-hidden flex flex-col h-full border-b-4 border-b-amber-500/20 hover:border-b-amber-500 transition-colors">
-                <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-amber-500/10 transition-all"></div>
+              <div key={exam.id} className="uiverse-card min-h-[320px] group cursor-pointer relative flex flex-col justify-between overflow-hidden">
+                <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-30 transition-all group-hover:scale-125 group-hover:rotate-12 duration-700">
+                   <Trophy className="w-24 h-24 text-amber-500" />
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 
-                <div className="flex justify-between items-start mb-8 relative z-10">
-                   <div className="px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 text-[9px] font-black tracking-widest border border-amber-500/20 uppercase">
-                      {exam.exam_type}
-                   </div>
-                   <div className="px-3 py-1.5 rounded-lg bg-glass-bg border border-glass-border flex items-center gap-2">
-                      <Clock className="w-3.5 h-3.5 text-text-muted" />
-                      <span className="text-[10px] font-black text-text-main italic tracking-tighter">{exam.exam_date}</span>
-                   </div>
-                </div>
+                <div className="relative z-10 p-8 h-full flex flex-col">
+                  <div className="flex justify-between items-start mb-8">
+                     <div className="px-3 py-1.5 rounded-lg bg-amber-500/10 text-amber-400 text-[9px] font-black tracking-widest border border-amber-500/20 uppercase italic">
+                        {exam.exam_type} Protocol
+                     </div>
+                     <div className="px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 flex items-center gap-2 group-hover:border-amber-500/30 transition-colors">
+                        <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                        <span className="text-[10px] font-black text-white italic tracking-tighter">{exam.exam_date}</span>
+                     </div>
+                  </div>
 
-                <h3 className="text-2xl font-black text-text-main group-hover:text-amber-400 transition-colors tracking-tight italic uppercase mb-8 flex-1 leading-tight">{exam.name}</h3>
+                  <h3 className="text-2xl font-black text-white group-hover:text-amber-400 transition-colors tracking-tighter italic uppercase leading-tight mb-8">
+                    {exam.name}
+                  </h3>
 
-                <div className="space-y-4 mb-10 relative z-10">
-                   <div className="flex items-center gap-4 group/item">
-                      <div className="w-8 h-8 rounded-lg bg-glass-bg border border-glass-border flex items-center justify-center text-text-muted group-hover/item:text-indigo-400 transition-colors">
-                        <BookOpen className="w-4 h-4" />
-                      </div>
-                      <span className="text-sm font-bold text-text-muted group-hover/item:text-text-main transition-colors tracking-tight">{exam.subject_name}</span>
-                   </div>
-                   <div className="flex items-center gap-4 group/item">
-                      <div className="w-8 h-8 rounded-lg bg-glass-bg border border-glass-border flex items-center justify-center text-text-muted group-hover/item:text-emerald-400 transition-colors">
-                        <GraduationCap className="w-4 h-4" />
-                      </div>
-                      <span className="text-sm font-bold text-text-muted group-hover/item:text-text-main transition-colors tracking-tight uppercase tracking-widest text-[11px]">{exam.course_name}</span>
-                   </div>
-                   <div className="flex items-center gap-4 group/item">
-                      <div className="w-8 h-8 rounded-lg bg-glass-bg border border-glass-border flex items-center justify-center text-text-muted group-hover/item:text-rose-400 transition-colors">
-                        <MapPin className="w-4 h-4" />
-                      </div>
-                      <span className="text-xs font-black text-text-muted/60 group-hover/item:text-text-main transition-colors uppercase tracking-[0.15em]">{exam.venue || 'DIGITAL NODE L-102'}</span>
-                   </div>
-                </div>
+                  <div className="space-y-4 mb-auto">
+                     <div className="flex items-center gap-4 group/item">
+                        <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-amber-400/60 group-hover/item:text-amber-400 transition-colors">
+                          <BookOpen className="w-4 h-4" />
+                        </div>
+                        <span className="text-sm font-bold text-text-muted group-hover/item:text-white transition-colors tracking-tight italic">{exam.subject_name}</span>
+                     </div>
+                     <div className="flex items-center gap-4 group/item">
+                        <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center text-text-muted group-hover/item:text-emerald-400 transition-colors">
+                          <GraduationCap className="w-4 h-4" />
+                        </div>
+                        <span className="text-sm font-bold text-text-muted group-hover/item:text-white transition-colors tracking-widest text-[11px] uppercase italic">{exam.course_name}</span>
+                     </div>
+                  </div>
 
-                <div className="pt-6 border-t border-glass-border flex items-center justify-between relative z-10">
-                   <div className="flex flex-col">
-                      <span className="text-[8px] font-black text-text-muted uppercase tracking-[0.25em] mb-1">SYNC WINDOW</span>
-                      <span className="text-xs font-black text-text-main tracking-tighter italic">{exam.start_time} (60 MIN SESS)</span>
-                   </div>
-                   {currentUser?.role !== 'student' && (
-                     <button 
-                        onClick={() => handleOpenMarksEntry(exam)} 
-                        className="p-3 bg-glass-bg hover:bg-amber-500 rounded-xl transition-all border border-glass-border text-amber-400 hover:text-white group-hover:shadow-[0_0_20px_rgba(245,158,11,0.2)]"
-                     >
-                        <Edit2 className="w-4.5 h-4.5" />
-                     </button>
-                   )}
+                  <div className="pt-6 mt-8 border-t border-white/5 flex items-center justify-between">
+                     <div className="flex flex-col">
+                        <span className="text-[8px] font-black text-text-muted uppercase tracking-[0.25em] mb-1">SYNC WINDOW</span>
+                        <div className="flex items-center gap-2">
+                           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                           <span className="text-xs font-black text-white tracking-tighter italic">{exam.start_time} (60 MIN SESS)</span>
+                        </div>
+                     </div>
+                     {currentUser?.role !== 'student' && (
+                       <button 
+                          onClick={(e) => { e.stopPropagation(); handleOpenMarksEntry(exam); }} 
+                          className="p-3 bg-white/5 hover:bg-amber-600 rounded-xl transition-all border border-white/10 text-amber-400 hover:text-white group-hover:shadow-[0_0_20px_rgba(245,158,11,0.2)] active:scale-90"
+                       >
+                          <Edit2 className="w-4.5 h-4.5" />
+                       </button>
+                     )}
+                  </div>
                 </div>
               </div>
             ))}
           </div>
         ) : activeTab === 'results' ? (
-          <div className="glass-card overflow-hidden">
+          <div className="glass-card overflow-hidden p-0 border-white/5 bg-black/40">
+             <div className="p-8 border-b border-glass-border flex items-center justify-between bg-white/5">
+                <h3 className="text-xl font-black italic text-white uppercase tracking-tighter flex items-center gap-4">
+                   <TrendingUp className="w-5 h-5 text-emerald-400" /> KNOWLEDGE PERSISTENCE LEDGER
+                </h3>
+                <div className="flex items-center gap-4">
+                   <span className="text-[10px] font-black text-text-muted uppercase tracking-widest px-4 py-2 rounded-lg bg-black/50 border border-white/5 italic">ACADEMIC YEAR: 2024-25</span>
+                </div>
+             </div>
+             
              <div className="overflow-x-auto">
-                <table className="premium-table">
+                <table className="premium-table w-full">
                   <thead>
-                     <tr>
-                        <th>Deployment Vector</th>
-                        <th>Knowledge Node</th>
-                        <th>Intensity (Marks)</th>
-                        <th>Persistence Grade</th>
+                     <tr className="bg-white/5">
+                        <th className="px-8 py-6 text-[10px] font-black text-text-muted uppercase tracking-widest text-left">DEPLOYMENT IDENTITY</th>
+                        <th className="px-8 py-6 text-[10px] font-black text-text-muted uppercase tracking-widest text-left">SUBJECT DOMAIN</th>
+                        <th className="px-8 py-6 text-[10px] font-black text-text-muted uppercase tracking-widest text-left">STABILITY RATIO</th>
+                        <th className="px-8 py-6 text-[10px] font-black text-text-muted uppercase tracking-widest text-right">PERSISTENCE GRADE</th>
                      </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-white/5">
                      {myResults.length > 0 ? myResults.map(res => (
-                       <tr key={res.id} className="group">
-                          <td>
-                             <div className="flex flex-col">
-                                <span className="font-black text-text-main italic tracking-tight uppercase group-hover:text-amber-400 transition-all">{res.exam_name}</span>
-                                <span className="text-[9px] font-bold text-text-muted tracking-[0.2em] uppercase mt-1 italic">{res.exam_type}</span>
+                       <tr key={res.id} className="hover:bg-white/5 transition-all group">
+                          <td className="px-8 py-8">
+                             <div className="flex items-center gap-5">
+                                <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 group-hover:bg-amber-500 group-hover:text-white transition-all">
+                                   <Trophy className="w-5 h-5" />
+                                </div>
+                                <div className="flex flex-col">
+                                   <span className="font-black text-white italic tracking-tighter uppercase text-lg leading-tight group-hover:text-amber-400 transition-colors">{res.exam_name}</span>
+                                   <span className="text-[9px] font-black text-text-muted tracking-[0.2em] uppercase mt-1 italic">{res.exam_type} Protocol</span>
+                                </div>
                              </div>
                           </td>
-                          <td>
-                             <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+                          <td className="px-8 py-8">
+                             <div className="flex items-center gap-4">
+                                <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
                                   <BookOpen className="w-4 h-4" />
                                 </div>
-                                <span className="text-sm font-bold text-text-muted group-hover:text-text-main transition-colors">{res.subject_name}</span>
+                                <span className="text-sm font-bold text-text-muted group-hover:text-white transition-colors italic">{res.subject_name}</span>
                              </div>
                           </td>
-                          <td>
-                             <div className="flex items-baseline gap-1">
-                                <span className="text-xl font-black text-amber-400 italic">{res.marks_obtained}</span>
-                                <span className="text-[10px] font-black text-text-muted/40 uppercase tracking-widest">/ {res.max_marks} UNITS</span>
+                          <td className="px-8 py-8">
+                             <div className="flex flex-col gap-2">
+                                <div className="flex items-baseline gap-2">
+                                   <span className="text-2xl font-black text-white italic tracking-tighter">{res.marks_obtained}</span>
+                                   <span className="text-[10px] font-black text-text-muted uppercase tracking-widest">/ {res.max_marks} UNITS</span>
+                                </div>
+                                <div className="w-32 h-1.5 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                                   <div className="h-full bg-amber-500 shadow-[0_0_15px_rgba(245,158,11,0.5)]" style={{ width: `${(res.marks_obtained/res.max_marks)*100}%` }}></div>
+                                </div>
                              </div>
                           </td>
-                          <td>
-                             <div className="flex items-center gap-3">
-                                <span className="px-5 py-2 rounded-xl bg-emerald-500/10 text-emerald-400 font-black italic text-lg shadow-inner ring-1 ring-emerald-500/20">
+                          <td className="px-8 py-8 text-right">
+                             <div className="flex items-center justify-end gap-5">
+                                <div className="flex flex-col text-right">
+                                  <span className="text-[8px] font-black text-text-muted uppercase tracking-[0.2em] mb-1">COMPLIANCE</span>
+                                  <span className="text-[10px] font-black text-emerald-400/80 uppercase tracking-widest italic">STABLE V-0.4</span>
+                                </div>
+                                <span className="w-16 h-16 rounded-2xl bg-emerald-500/20 text-emerald-400 font-black italic text-2xl flex items-center justify-center shadow-xl ring-1 ring-emerald-500/30 group-hover:scale-110 transition-transform">
                                    {res.grade}
                                 </span>
-                                <div className="flex flex-col">
-                                  <span className="text-[8px] font-black text-text-muted uppercase tracking-[0.2em]">Compliance</span>
-                                  <span className="text-[10px] font-bold text-emerald-400/60 uppercase">Validated</span>
-                                </div>
                              </div>
                           </td>
                        </tr>
                      )) : (
-                        <tr><td colSpan="4" className="py-48 text-center text-text-muted opacity-30 italic font-bold tracking-widest uppercase">No Persistence Results Detected In Hub</td></tr>
+                        <tr><td colSpan="4" className="py-48 text-center text-text-muted opacity-30 italic font-black tracking-[0.5em] uppercase">No Assessment Logs Detected In Security Hub</td></tr>
                      )}
                   </tbody>
                 </table>
@@ -473,7 +509,7 @@ const Exams = ({ currentUser }) => {
                 </div>
                 <button 
                   onClick={saveMarks} 
-                  className="btn-premium px-10 py-3.5 rounded-xl text-[10px] tracking-widest shadow-xl shadow-emerald-600/20 active:scale-95 transition-all"
+                  className="btn-premium px-10 py-3-5 rounded-xl text-[10px] tracking-widest shadow-xl shadow-emerald-600/20 active:scale-95 transition-all"
                 >
                    PUBLISH GLOBAL SYNC
                 </button>

@@ -22,12 +22,25 @@ import {
 const Profile = ({ currentUser }) => {
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         setLoading(true);
+        // Priority: Try Firestore first for modern ERP data
+        if (currentUser?.uid) {
+           const userDoc = await getDoc(doc(db, 'users', currentUser.uid));
+           if (userDoc.exists()) {
+              setProfile(userDoc.data());
+              setLoading(false);
+              return;
+           }
+        }
+
+        // Fallback: Legacy API
         const response = await axios.get('/api/profile/data', {
           withCredentials: true
         });
@@ -38,12 +51,13 @@ const Profile = ({ currentUser }) => {
         setError(null);
       } catch (err) {
         console.error('Error fetching profile:', err);
-        setError('Failed to load profile details. Please try again.');
-        // Fallback to basic current user
+        // Final fallback to Current User prop
         setProfile({
           name: currentUser?.name || 'User',
           email: currentUser?.email || 'user@college.edu',
-          role: currentUser?.role || 'Guest'
+          role: currentUser?.role || 'Guest',
+          phone: '',
+          address: ''
         });
       } finally {
         setLoading(false);
@@ -52,6 +66,32 @@ const Profile = ({ currentUser }) => {
 
     fetchProfile();
   }, [currentUser]);
+
+  const handleUpdate = async () => {
+    setSaving(true);
+    setSuccess(false);
+    setError(null);
+    try {
+      if (currentUser?.uid) {
+        const userRef = doc(db, 'users', currentUser.uid);
+        await updateDoc(userRef, {
+          name: profile.name,
+          phone: profile.phone || '',
+          address: profile.address || '',
+          lastUpdated: serverTimestamp()
+        });
+        setSuccess(true);
+        setTimeout(() => setSuccess(false), 3000);
+      } else {
+        throw new Error('Unauthorized session');
+      }
+    } catch (err) {
+      console.error('Update failed:', err);
+      setError('Neural link synchronization failed. System write-back aborted.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -72,8 +112,8 @@ const Profile = ({ currentUser }) => {
       <div className="row g-4">
         {/* Sidebar - Profile Card */}
         <div className="col-lg-4">
-          <div className="glass-card p-5 text-center sticky-top" style={{ top: '100px', zIndex: 10 }}>
-            <div className="position-relative d-inline-block mb-4">
+          <div className="uiverse-card w-full h-auto min-h-[450px] flex flex-col items-center justify-center gap-6 p-8 relative overflow-hidden">
+            <div className="position-relative d-inline-block mb-2 z-10">
               <div className="avatar-preview-container p-2 rounded-circle glass-border">
                 <img 
                   src={`https://ui-avatars.com/api/?name=${profile?.name}&size=256&background=6366f1&color=fff&bold=true`} 
@@ -87,33 +127,30 @@ const Profile = ({ currentUser }) => {
               </button>
             </div>
             
-            <h3 className="fw-bold text-white mb-1">{profile?.name}</h3>
-            <div className="d-flex justify-content-center mb-4">
-              <span className={`badge-premium text-uppercase ${profile?.role === 'admin' ? 'bg-indigo-soft text-indigo' : 'bg-purple-soft text-purple'}`}>
-                <Shield size={12} className="me-1" />
-                {profile?.role}
-              </span>
-            </div>
-            
-            <div className="glass-stats-grid row g-0 mb-4">
-              <div className="col-6 border-end glass-border py-2">
-                <p className="small text-secondary mb-0">Status</p>
-                <p className="text-emerald fw-bold mb-0">Active</p>
+            <div className="text-center z-10 w-full">
+              <h3 className="fw-bold text-white mb-2">{profile?.name}</h3>
+              <p className="heading uppercase mb-4 tracking-widest">{profile?.role}</p>
+              
+              <div className="flex justify-between items-center bg-white/5 border border-white/10 rounded-2xl p-4 mb-6">
+                <div className="text-left">
+                  <p className="small text-secondary mb-0 uppercase text-[8px] font-black tracking-tighter">Status</p>
+                  <p className="text-emerald fw-bold mb-0 text-sm">Optimal</p>
+                </div>
+                <div className="text-right">
+                  <p className="small text-secondary mb-0 uppercase text-[8px] font-black tracking-tighter">Verified</p>
+                  <p className="text-white fw-bold mb-0 text-sm">Protocol A</p>
+                </div>
               </div>
-              <div className="col-6 py-2">
-                <p className="small text-secondary mb-0">Joined</p>
-                <p className="text-white fw-bold mb-0">2023</p>
-              </div>
-            </div>
 
-            <button className="btn-premium w-100 py-3 mb-3">
-              <Edit3 size={18} className="me-2" />
-              Update Profile
-            </button>
-            <button className="btn-glass w-100 py-3 text-danger-soft">
-              <LogOut size={18} className="me-2" />
-              Logout Session
-            </button>
+              <button 
+                onClick={handleUpdate}
+                disabled={saving}
+                className={`btn-premium w-full py-4 flex items-center justify-center gap-3 transition-all ${success ? 'bg-emerald-600' : ''}`}
+              >
+                {saving ? <div className="spinner-border spinner-border-sm" /> : (success ? <CheckCircle size={20} /> : <Edit3 size={18} />)}
+                <span className="font-bold">{saving ? 'SYNCING...' : (success ? 'SYNC COMPLETE' : 'COMMIT UPDATES')}</span>
+              </button>
+            </div>
           </div>
         </div>
 

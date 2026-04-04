@@ -11,6 +11,7 @@ Before running the system, you need to provide your Firebase Service Account key
 2. Select your project: `college-erp-ak-1234567890` (or your existing one).
 3. Go to **Project Settings** > **Service Accounts**.
 4. Click **Generate new private key** and download the JSON file.
+
 5. Rename the file to `firebase-key.json` and place it in the root directory of your project.
 
 ## 2. Install Dependencies

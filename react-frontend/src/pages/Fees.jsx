@@ -24,7 +24,8 @@ import {
   ChevronRight,
   User,
   Layers,
-  Banknote
+  Banknote,
+  Calendar
 } from 'lucide-react';
 
 const Fees = ({ currentUser }) => {
@@ -108,10 +109,10 @@ const Fees = ({ currentUser }) => {
         <div className="flex items-center gap-6">
           <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shadow-lg shadow-indigo-500/10 relative overflow-hidden group">
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <Wallet className="w-8 h-8 text-indigo-440 group-hover:scale-110 transition-transform" />
+            <Wallet className="w-8 h-8 text-indigo-400 group-hover:scale-110 transition-transform" />
           </div>
           <div>
-            <h1 className="text-3xl md:text-4xl font-black text-gradient-primary tracking-tight italic">FISCAL TERMINAL</h1>
+            <h1 className="text-3xl md:text-4xl font-black text-gradient-primary tracking-tight italic">FISCAL NEXUS</h1>
             <p className="text-text-muted mt-1 font-medium flex items-center gap-2">
               <Activity className="w-4 h-4 text-emerald-400" />
               Institutional liquidity matrix and billing analytics

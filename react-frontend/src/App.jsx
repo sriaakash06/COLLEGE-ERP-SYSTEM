@@ -28,6 +28,19 @@ import {
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './index.css';
 
+// Firebase imports
+import { 
+  auth, 
+  signInWithGoogle, 
+  loginWithEmail, 
+  logout as firebaseLogout, 
+  db,
+  createUserWithEmailAndPassword,
+  storeUserProfile
+} from './firebase';
+import { onAuthStateChanged } from 'firebase/auth';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
+
 // Importing pages
 import Dashboard from './pages/Dashboard';
 import Attendance from './pages/Attendance';
@@ -195,26 +208,40 @@ const Login = ({ onLoginSuccess }) => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const [isRegistering, setIsRegistering] = useState(false);
+  const [name, setName] = useState('');
+
+  const handleGoogleLogin = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      await signInWithGoogle();
+      onLoginSuccess();
+    } catch (err) {
+      setError(err.message || 'Identity verification failed. Please check connection and retry.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
     try {
-      const formData = new FormData();
-      formData.append('email', email);
-      formData.append('password', password);
-      
-      const res = await axios.post('/api/login', formData, {
-        withCredentials: true,
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-      });
-      if (res.data.success) {
+      if (isRegistering) {
+        // Register new Firebase user
+        const result = await createUserWithEmailAndPassword(auth, email, password);
+        // Store profile with name
+        await storeUserProfile(result.user, { name: name || 'EduCloud User' });
         onLoginSuccess();
       } else {
-        setError(res.data.message || 'Authentication failed');
+        // Login existing Firebase user
+        await loginWithEmail(email, password);
+        onLoginSuccess();
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Technical error. Please retry later.');
+      setError(err.message || 'Authentication failed. Please check credentials.');
     } finally {
       setLoading(false);
     }
@@ -250,12 +277,14 @@ const Login = ({ onLoginSuccess }) => {
                 <div className="auth-form-content p-5">
                   <div className="mb-5 d-lg-none text-center">
                     <Zap size={32} className="text-primary mb-3" />
-                    <h2 className="fw-bold">EduCloud ERP</h2>
+                    <h2 className="fw-bold">College-ERP</h2>
                   </div>
                   
                   <div className="mb-5">
-                    <h2 className="fw-bold text-white mb-2">Secure Gateway</h2>
-                    <p className="text-secondary mb-0">Identity verification required to access the nexus.</p>
+                    <h2 className="fw-bold text-white mb-2">{isRegistering ? 'Provision ID' : 'Secure Gateway'}</h2>
+                    <p className="text-secondary mb-0">
+                      {isRegistering ? 'Enter credentials to initialize your institutional node.' : 'Identity verification required to access the nexus.'}
+                    </p>
                   </div>
 
                   {error && (
@@ -266,6 +295,21 @@ const Login = ({ onLoginSuccess }) => {
                   )}
 
                   <form onSubmit={handleSubmit}>
+                    {isRegistering && (
+                      <div className="mb-4">
+                        <label className="premium-label">Legal Name</label>
+                        <div className="input-group-glass py-3">
+                          <UserCircle size={18} className="text-secondary" />
+                          <input 
+                            type="text" 
+                            placeholder="John Doe" 
+                            value={name} 
+                            onChange={(e) => setName(e.target.value)} 
+                            required 
+                          />
+                        </div>
+                      </div>
+                    )}
                     <div className="mb-4">
                       <label className="premium-label">Institutional Email</label>
                       <div className="input-group-glass py-3">
@@ -282,7 +326,7 @@ const Login = ({ onLoginSuccess }) => {
                     <div className="mb-5">
                       <div className="d-flex justify-content-between">
                         <label className="premium-label">Security Cipher</label>
-                        <a href="#" className="small text-primary text-decoration-none opacity-75 hover-opacity-100">Forgot?</a>
+                        {!isRegistering && <a href="#" className="small text-primary text-decoration-none opacity-75 hover-opacity-100">Forgot?</a>}
                       </div>
                       <div className="input-group-glass py-3">
                         <Lock size={18} className="text-secondary" />
@@ -296,18 +340,44 @@ const Login = ({ onLoginSuccess }) => {
                       </div>
                     </div>
                     
-                    <button type="submit" className="btn-premium w-100 py-3 fw-bold" disabled={loading}>
+                    <button type="submit" className="btn-premium w-100 py-3 fw-bold mb-4" disabled={loading}>
                       {loading ? (
                         <div className="d-flex align-items-center justify-content-center gap-2">
                           <div className="spinner-border spinner-border-sm" role="status"></div>
-                          <span>Authenticating Nexus...</span>
+                          <span>{isRegistering ? 'Provisions In Flight...' : 'Authenticating Nexus...'}</span>
                         </div>
                       ) : (
                         <div className="d-flex align-items-center justify-content-center gap-2">
-                          <span>Establish Session</span>
+                          <span>{isRegistering ? 'Create Academic Node' : 'Establish Session'}</span>
                           <ChevronRight size={18} />
                         </div>
                       )}
+                    </button>
+
+                    <div className="text-center mb-4">
+                      <button 
+                        type="button" 
+                        onClick={() => setIsRegistering(!isRegistering)}
+                        className="bg-transparent border-0 text-primary small fw-bold hover-opacity-100"
+                      >
+                        {isRegistering ? 'ALREADY REGISTERED? LOG IN' : 'NEW OPERATOR? PROVISION ACCOUNT'}
+                      </button>
+                    </div>
+
+                    <div className="d-flex align-items-center mb-4">
+                       <hr className="flex-grow-1 opacity-25" />
+                       <span className="mx-3 small text-secondary">OR CONTINUE WITH IDENTITY PROVIDER</span>
+                       <hr className="flex-grow-1 opacity-25" />
+                    </div>
+
+                    <button 
+                      type="button" 
+                      onClick={handleGoogleLogin} 
+                      className="btn-google-glass w-100 py-3 fw-bold d-flex align-items-center justify-content-center gap-3"
+                      disabled={loading}
+                    >
+                      <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" width="20" height="20" alt="G" />
+                      <span>Google Authentication Gateway</span>
                     </button>
                     
                     <div className="mt-5 text-center text-secondary extra-small opacity-50">
@@ -330,23 +400,55 @@ function App() {
   const [authLoading, setAuthLoading] = useState(true);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const checkAuth = async () => {
-    try {
-      const res = await axios.get('/api/me', { withCredentials: true });
-      if (res.data.authenticated) {
-        setCurrentUser(res.data.user);
-      } else {
-        setCurrentUser(null);
-      }
-    } catch {
-      setCurrentUser(null);
-    } finally {
-      setAuthLoading(false);
-    }
-  };
-
   useEffect(() => {
-    checkAuth();
+    let unsubscribeUser = null;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser) {
+        // Stop previous listener if exists
+        if (unsubscribeUser) unsubscribeUser();
+
+        // Listen for real-time changes to the user document
+        const userRef = doc(db, 'users', firebaseUser.uid);
+        unsubscribeUser = onSnapshot(userRef, (docSnap) => {
+          if (docSnap.exists()) {
+            setCurrentUser(docSnap.data());
+          } else {
+            // Fallback for extremely new users where doc creation is in flight
+            setCurrentUser({
+              uid: firebaseUser.uid,
+              name: firebaseUser.displayName || 'EduCloud User',
+              email: firebaseUser.email,
+              role: 'Student'
+            });
+          }
+          setAuthLoading(false);
+        }, (error) => {
+          console.error("Firestore Listener Error:", error);
+          setAuthLoading(false);
+        });
+      } else {
+        // Handle guest user or legacy auth
+        if (unsubscribeUser) unsubscribeUser();
+        
+        try {
+          const res = await axios.get('/api/me', { withCredentials: true });
+          if (res.data.authenticated) {
+            setCurrentUser(res.data.user);
+          } else {
+            setCurrentUser(null);
+          }
+        } catch {
+          setCurrentUser(null);
+        }
+        setAuthLoading(false);
+      }
+    });
+
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeUser) unsubscribeUser();
+    };
   }, []);
 
   // Sync theme
@@ -366,6 +468,7 @@ function App() {
 
   const handleLogout = async () => {
     try {
+      await firebaseLogout();
       await axios.get('/api/logout', { withCredentials: true });
       setCurrentUser(null);
     } catch (err) {
@@ -382,7 +485,7 @@ function App() {
   }
 
   if (!currentUser) {
-    return <Login onLoginSuccess={checkAuth} />;
+    return <Login onLoginSuccess={() => {}} />;
   }
 
   return (
@@ -397,18 +500,19 @@ function App() {
         
         <main className="main-stage">
           <Routes>
-            <Route path="/" element={<PageWrapper title="Dashboard View" theme={theme} toggleTheme={toggleTheme} setSidebarOpen={setSidebarOpen} currentUser={currentUser}><Dashboard /></PageWrapper>} />
-            <Route path="/attendance" element={<PageWrapper title="Attendance Nexus" theme={theme} toggleTheme={toggleTheme} setSidebarOpen={setSidebarOpen} currentUser={currentUser}><Attendance currentUser={currentUser} /></PageWrapper>} />
-            <Route path="/students" element={<PageWrapper title="Registry Command" theme={theme} toggleTheme={toggleTheme} setSidebarOpen={setSidebarOpen} currentUser={currentUser}><Students currentUser={currentUser} /></PageWrapper>} />
-            <Route path="/staff" element={<PageWrapper title="Personnel Directory" theme={theme} toggleTheme={toggleTheme} setSidebarOpen={setSidebarOpen} currentUser={currentUser}><Staff currentUser={currentUser} /></PageWrapper>} />
-            <Route path="/courses" element={<PageWrapper title="Curriculum Matrix" theme={theme} toggleTheme={toggleTheme} setSidebarOpen={setSidebarOpen} currentUser={currentUser}><Courses currentUser={currentUser} /></PageWrapper>} />
-            <Route path="/notices" element={<PageWrapper title="Broadcast Hub" theme={theme} toggleTheme={toggleTheme} setSidebarOpen={setSidebarOpen} currentUser={currentUser}><Notices currentUser={currentUser} /></PageWrapper>} />
-            <Route path="/profile" element={<PageWrapper title="Identity Control" theme={theme} toggleTheme={toggleTheme} setSidebarOpen={setSidebarOpen} currentUser={currentUser}><Profile currentUser={currentUser} /></PageWrapper>} />
-            <Route path="/library" element={<PageWrapper title="Knowledge Archive" theme={theme} toggleTheme={toggleTheme} setSidebarOpen={setSidebarOpen} currentUser={currentUser}><Library currentUser={currentUser} /></PageWrapper>} />
+            <Route path="/" element={<PageWrapper title="COMMAND CENTER" theme={theme} toggleTheme={toggleTheme} setSidebarOpen={setSidebarOpen} currentUser={currentUser}><Dashboard /></PageWrapper>} />
+            <Route path="/attendance" element={<PageWrapper title="NEURAL PRESENCE HUB" theme={theme} toggleTheme={toggleTheme} setSidebarOpen={setSidebarOpen} currentUser={currentUser}><Attendance currentUser={currentUser} /></PageWrapper>} />
+            <Route path="/students" element={<PageWrapper title="STUDENT REGISTRY" theme={theme} toggleTheme={toggleTheme} setSidebarOpen={setSidebarOpen} currentUser={currentUser}><Students currentUser={currentUser} /></PageWrapper>} />
+            <Route path="/staff" element={<PageWrapper title="PERSONNEL DIRECTORY" theme={theme} toggleTheme={toggleTheme} setSidebarOpen={setSidebarOpen} currentUser={currentUser}><Staff currentUser={currentUser} /></PageWrapper>} />
+            <Route path="/courses" element={<PageWrapper title="COURSE ARCHIVE" theme={theme} toggleTheme={toggleTheme} setSidebarOpen={setSidebarOpen} currentUser={currentUser}><Courses currentUser={currentUser} /></PageWrapper>} />
+            <Route path="/notices" element={<PageWrapper title="BROADCAST CENTER" theme={theme} toggleTheme={toggleTheme} setSidebarOpen={setSidebarOpen} currentUser={currentUser}><Notices currentUser={currentUser} /></PageWrapper>} />
+            <Route path="/profile" element={<PageWrapper title="IDENTITY CONTROL" theme={theme} toggleTheme={toggleTheme} setSidebarOpen={setSidebarOpen} currentUser={currentUser}><Profile currentUser={currentUser} /></PageWrapper>} />
+            <Route path="/library" element={<PageWrapper title="LIBRARY ARCHIVE" theme={theme} toggleTheme={toggleTheme} setSidebarOpen={setSidebarOpen} currentUser={currentUser}><Library currentUser={currentUser} /></PageWrapper>} />
             <Route path="/hostel" element={<PageWrapper title="Residential Operations" theme={theme} toggleTheme={toggleTheme} setSidebarOpen={setSidebarOpen} currentUser={currentUser}><Hostel currentUser={currentUser} /></PageWrapper>} />
             <Route path="/timetable" element={<PageWrapper title="Scheduling Chronos" theme={theme} toggleTheme={toggleTheme} setSidebarOpen={setSidebarOpen} currentUser={currentUser}><Timetable currentUser={currentUser} /></PageWrapper>} />
             <Route path="/fees" element={<PageWrapper title="Ledger Terminal" theme={theme} toggleTheme={toggleTheme} setSidebarOpen={setSidebarOpen} currentUser={currentUser}><Fees currentUser={currentUser} /></PageWrapper>} />
-            <Route path="/exams" element={<PageWrapper title="Assessment Grid" theme={theme} toggleTheme={toggleTheme} setSidebarOpen={setSidebarOpen} currentUser={currentUser}><Exams currentUser={currentUser} /></PageWrapper>} />
+            <Route path="/exams" element={<PageWrapper title="ASSESSMENT HUB" theme={theme} toggleTheme={toggleTheme} setSidebarOpen={setSidebarOpen} currentUser={currentUser}><Exams currentUser={currentUser} /></PageWrapper>} />
+            <Route path="/settings" element={<PageWrapper title="CORE SETTINGS" theme={theme} toggleTheme={toggleTheme} setSidebarOpen={setSidebarOpen} currentUser={currentUser}><SettingsPlaceholder /></PageWrapper>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>
@@ -432,6 +536,14 @@ const PageWrapper = ({ children, title, theme, toggleTheme, setSidebarOpen, curr
         {children}
       </div>
     </div>
+  </div>
+);
+
+// Placeholder for missing components
+const SettingsPlaceholder = () => (
+  <div className="glass-card-premium p-5 text-center">
+    <h3 className="text-white">Settings Portal</h3>
+    <p className="text-secondary">Infrastructure parameters are currently under maintenance.</p>
   </div>
 );
 

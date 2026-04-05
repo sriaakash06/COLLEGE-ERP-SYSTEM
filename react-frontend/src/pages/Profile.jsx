@@ -12,12 +12,12 @@ import {
   Edit3, 
   Camera, 
   CheckCircle, 
-  AtSign,
-  CreditCard,
   Briefcase,
   Calendar,
   Lock,
-  LogOut
+  ShieldCheck,
+  Fingerprint,
+  AlertCircle
 } from 'lucide-react';
 
 const Profile = ({ currentUser }) => {
@@ -96,119 +96,160 @@ const Profile = ({ currentUser }) => {
 
   if (loading) {
     return (
-      <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '60vh' }}>
-        <div className="spinner-glow"></div>
+      <div className="flex flex-col items-center justify-center min-h-[500px] animate-pulse">
+        <div className="w-20 h-20 rounded-[2rem] bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shadow-2xl relative mb-4">
+          <User className="w-10 h-10 text-indigo-400" />
+          <div className="absolute inset-0 border-2 border-t-indigo-500 border-transparent rounded-[2.1rem] animate-spin"></div>
+        </div>
+        <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.5em] italic">LOADING IDENTITY MATRIX...</p>
       </div>
     );
   }
 
+  const roleColor = profile?.role === 'admin' ? 'rose' : profile?.role === 'staff' ? 'blue' : 'emerald';
+
   return (
-    <div className="profile-container fade-in">
+    <div className="p-4 md:p-8 space-y-8 animate-fade-in">
       {/* Header */}
-      <div className="mb-5">
-        <h1 className="display-5 fw-bold text-gradient-primary mb-2">Identity Hub</h1>
-        <p className="text-secondary mb-0">Securely manage your academic and personal credentials</p>
+      <div className="flex items-center gap-6">
+        <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shadow-lg shadow-indigo-500/10 relative overflow-hidden group">
+          <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+          <Fingerprint className="w-8 h-8 text-indigo-400 group-hover:scale-110 transition-transform" />
+        </div>
+        <div>
+          <h1 className="text-3xl md:text-4xl font-black text-gradient-primary tracking-tight italic uppercase">IDENTITY HUB</h1>
+          <p className="text-text-muted mt-1 font-medium flex items-center gap-2">
+            <Shield className="w-4 h-4 text-indigo-400" />
+            Securely manage your academic and personal credentials
+          </p>
+        </div>
       </div>
 
-      <div className="row g-4">
-        {/* Sidebar - Profile Card */}
-        <div className="col-lg-4">
-          <div className="uiverse-card w-full h-auto min-h-[450px] flex flex-col items-center justify-center gap-6 p-8 relative overflow-hidden">
-            <div className="position-relative d-inline-block mb-2 z-10">
-              <div className="avatar-preview-container p-2 rounded-circle glass-border">
-                <img 
-                  src={`https://ui-avatars.com/api/?name=${profile?.name}&size=256&background=6366f1&color=fff&bold=true`} 
-                  className="rounded-circle shadow-lg" 
-                  style={{ width: '130px', height: '130px', objectFit: 'cover' }}
-                  alt="Profile" 
+      {/* Alerts */}
+      {error && (
+        <div className="glass-card bg-rose-500/10 border-rose-500/30 p-5 flex items-center gap-4 animate-fade-in">
+          <div className="w-10 h-10 rounded-full bg-rose-500/20 flex items-center justify-center text-rose-400">
+            <AlertCircle className="w-5 h-5" />
+          </div>
+          <p className="text-rose-300 font-bold text-sm">{error}</p>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Profile Card Sidebar */}
+        <div className="lg:col-span-1">
+          <div className="uiverse-card min-h-[460px] flex flex-col items-center justify-center gap-6 p-8 relative overflow-hidden">
+            {/* Avatar */}
+            <div className="relative z-10">
+              <div className="p-1.5 rounded-full bg-gradient-to-br from-indigo-500/40 to-purple-500/40 border border-white/10">
+                <img
+                  src={`https://ui-avatars.com/api/?name=${profile?.name}&size=256&background=6366f1&color=fff&bold=true`}
+                  className="rounded-full shadow-2xl shadow-indigo-500/20"
+                  style={{ width: '120px', height: '120px', objectFit: 'cover' }}
+                  alt="Profile"
                 />
               </div>
-              <button className="btn-icon-floating">
-                <Camera size={14} />
+              <button className="absolute -bottom-1 -right-1 w-9 h-9 rounded-full bg-indigo-600 border-2 border-background flex items-center justify-center text-white hover:bg-indigo-500 transition-all active:scale-90 shadow-xl">
+                <Camera className="w-4 h-4" />
               </button>
             </div>
-            
+
             <div className="text-center z-10 w-full">
-              <h3 className="fw-bold text-white mb-2">{profile?.name}</h3>
-              <p className="heading uppercase mb-4 tracking-widest">{profile?.role}</p>
-              
-              <div className="flex justify-between items-center bg-white/5 border border-white/10 rounded-2xl p-4 mb-6">
+              <h3 className="font-black text-text-main text-xl italic tracking-tighter uppercase mb-1">{profile?.name}</h3>
+              <span className={`px-4 py-1.5 rounded-xl text-[9px] font-black uppercase tracking-[0.2em] border bg-${roleColor}-500/10 text-${roleColor}-400 border-${roleColor}-500/20`}>
+                {profile?.role}
+              </span>
+
+              {/* Status Panel */}
+              <div className="flex justify-between items-center bg-white/5 border border-white/10 rounded-2xl p-4 mb-6 mt-6">
                 <div className="text-left">
-                  <p className="small text-secondary mb-0 uppercase text-[8px] font-black tracking-tighter">Status</p>
-                  <p className="text-emerald fw-bold mb-0 text-sm">Optimal</p>
+                  <p className="text-[8px] font-black uppercase text-text-muted/40 tracking-[0.25em] mb-1">STATUS</p>
+                  <p className="text-emerald-400 font-black text-sm">OPTIMAL</p>
                 </div>
+                <div className="w-px h-8 bg-white/10"></div>
                 <div className="text-right">
-                  <p className="small text-secondary mb-0 uppercase text-[8px] font-black tracking-tighter">Verified</p>
-                  <p className="text-white fw-bold mb-0 text-sm">Protocol A</p>
+                  <p className="text-[8px] font-black uppercase text-text-muted/40 tracking-[0.25em] mb-1">VERIFIED</p>
+                  <p className="text-white font-black text-sm">PROTOCOL A</p>
                 </div>
               </div>
 
-              <button 
+              <button
                 onClick={handleUpdate}
                 disabled={saving}
-                className={`btn-premium w-full py-4 flex items-center justify-center gap-3 transition-all ${success ? 'bg-emerald-600' : ''}`}
+                className={`btn-premium w-full py-4 flex items-center justify-center gap-3 transition-all rounded-xl ${success ? 'bg-emerald-600 from-emerald-600 to-emerald-500' : ''}`}
               >
-                {saving ? <div className="spinner-border spinner-border-sm" /> : (success ? <CheckCircle size={20} /> : <Edit3 size={18} />)}
-                <span className="font-bold">{saving ? 'SYNCING...' : (success ? 'SYNC COMPLETE' : 'COMMIT UPDATES')}</span>
+                {saving ? (
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : success ? (
+                  <CheckCircle className="w-5 h-5" />
+                ) : (
+                  <Edit3 className="w-5 h-5" />
+                )}
+                <span className="font-black text-[10px] uppercase tracking-[0.1em]">
+                  {saving ? 'SYNCING...' : success ? 'SYNC COMPLETE' : 'COMMIT UPDATES'}
+                </span>
               </button>
             </div>
           </div>
         </div>
 
-        {/* Form - Details Section */}
-        <div className="col-lg-8">
+        {/* Detail Panels */}
+        <div className="lg:col-span-2 space-y-6">
           {/* Personal Info */}
-          <div className="glass-card p-5 mb-4">
-            <div className="d-flex align-items-center mb-5">
-              <div className="icon-box-sm bg-primary-soft me-3">
-                <User size={20} className="text-primary" />
+          <div className="glass-card p-8">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="p-3 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                <User className="w-5 h-5" />
               </div>
-              <h4 className="fw-bold text-white mb-0">Personnel Dossier</h4>
+              <h4 className="font-black text-text-main text-lg uppercase tracking-tight italic">Personnel Dossier</h4>
             </div>
 
-            <div className="row g-4">
-              <div className="col-md-6">
-                <label className="premium-label">Full Legal Name</label>
-                <div className="input-group-glass readonly">
-                  <User size={18} />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase font-black text-text-muted tracking-[0.2em]">Full Legal Name</label>
+                <div className="input-group-glass opacity-70 cursor-not-allowed">
+                  <User className="w-4 h-4 text-text-muted shrink-0" />
                   <input value={profile?.name || ''} readOnly />
                 </div>
               </div>
-              <div className="col-md-6">
-                <label className="premium-label">Official Email Address</label>
-                <div className="input-group-glass readonly">
-                  <Mail size={18} />
+
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase font-black text-text-muted tracking-[0.2em]">Official Email</label>
+                <div className="input-group-glass opacity-70 cursor-not-allowed">
+                  <Mail className="w-4 h-4 text-text-muted shrink-0" />
                   <input value={profile?.email || ''} readOnly />
                 </div>
               </div>
 
               {profile?.role === 'student' && (
                 <>
-                  <div className="col-md-6">
-                    <label className="premium-label">Registration Identifier</label>
-                    <div className="input-group-glass readonly">
-                      <IdCard size={18} />
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase font-black text-text-muted tracking-[0.2em]">Registration ID</label>
+                    <div className="input-group-glass opacity-70 cursor-not-allowed">
+                      <Key className="w-4 h-4 text-text-muted shrink-0" />
                       <input value={profile?.reg_no || 'SYSTEM-PENDING-01'} readOnly />
                     </div>
                   </div>
-                  <div className="col-md-6">
-                    <label className="premium-label">Secure Contact Node</label>
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase font-black text-indigo-400 tracking-[0.2em]">Contact Node</label>
                     <div className="input-group-glass">
-                      <Phone size={18} />
-                      <input 
-                        value={profile?.phone || ''} 
-                        placeholder="+1 (555) 000-0000" 
+                      <Phone className="w-4 h-4 text-text-muted shrink-0" />
+                      <input
+                        value={profile?.phone || ''}
+                        placeholder="+1 (555) 000-0000"
                         onChange={(e) => setProfile({...profile, phone: e.target.value})}
                       />
                     </div>
                   </div>
-                  <div className="col-12">
-                    <label className="premium-label">Residential Coordinates</label>
-                    <div className="input-group-glass h-auto">
-                      <MapPin size={18} className="mt-3" />
-                      <textarea 
-                        className="p-3" 
-                        value={profile?.address || ''} 
+
+                  <div className="space-y-2 md:col-span-2">
+                    <label className="text-[10px] uppercase font-black text-indigo-400 tracking-[0.2em]">Residential Coordinates</label>
+                    <div className="input-group-glass h-auto items-start pt-3">
+                      <MapPin className="w-4 h-4 text-text-muted shrink-0 mt-1" />
+                      <textarea
+                        className="p-0 pt-1 resize-none"
+                        value={profile?.address || ''}
                         placeholder="Current residential address..."
                         rows={2}
                         onChange={(e) => setProfile({...profile, address: e.target.value})}
@@ -220,17 +261,18 @@ const Profile = ({ currentUser }) => {
 
               {profile?.role === 'staff' && (
                 <>
-                  <div className="col-md-6">
-                    <label className="premium-label">Department Allocation</label>
-                    <div className="input-group-glass readonly">
-                      <Briefcase size={18} />
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase font-black text-text-muted tracking-[0.2em]">Department</label>
+                    <div className="input-group-glass opacity-70 cursor-not-allowed">
+                      <Briefcase className="w-4 h-4 text-text-muted shrink-0" />
                       <input value={profile?.department || 'Faculty of Engineering'} readOnly />
                     </div>
                   </div>
-                  <div className="col-md-6">
-                    <label className="premium-label">Joining Date</label>
-                    <div className="input-group-glass readonly">
-                      <Calendar size={18} />
+
+                  <div className="space-y-2">
+                    <label className="text-[10px] uppercase font-black text-text-muted tracking-[0.2em]">Joining Date</label>
+                    <div className="input-group-glass opacity-70 cursor-not-allowed">
+                      <Calendar className="w-4 h-4 text-text-muted shrink-0" />
                       <input value={profile?.joining_date || '2023-01-15'} readOnly />
                     </div>
                   </div>
@@ -240,61 +282,77 @@ const Profile = ({ currentUser }) => {
           </div>
 
           {/* Security Config */}
-          <div className="glass-card p-5">
-            <div className="d-flex align-items-center mb-5">
-              <div className="icon-box-sm bg-warning-soft me-3">
-                <Shield size={20} className="text-warning" />
+          <div className="glass-card p-8">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                <Shield className="w-5 h-5" />
               </div>
-              <h4 className="fw-bold text-white mb-0">Security Protocols</h4>
+              <h4 className="font-black text-text-main text-lg uppercase tracking-tight italic">Security Protocols</h4>
             </div>
 
-            <div className="security-stacked-list">
-              <div className="security-item p-4 mb-3 border-hover">
-                <div className="d-flex justify-content-between align-items-center">
-                  <div className="d-flex align-items-center">
-                    <div className="icon-box-xs bg-success-soft me-3">
-                      <CheckCircle size={16} className="text-success" />
-                    </div>
-                    <div>
-                      <h6 className="text-white fw-bold mb-0">System Integrity</h6>
-                      <p className="text-secondary extra-small mb-0">Account synced with Firestore Secure Cloud</p>
-                    </div>
+            <div className="space-y-4">
+              {/* System Integrity */}
+              <div className="flex items-center justify-between p-5 rounded-2xl bg-glass-bg/50 border border-glass-border hover:border-emerald-500/30 transition-all group">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                    <CheckCircle className="w-5 h-5" />
                   </div>
-                  <span className="badge-premium bg-success-soft text-success">Verified</span>
+                  <div>
+                    <h6 className="font-black text-text-main uppercase tracking-tight">System Integrity</h6>
+                    <p className="text-text-muted text-xs mt-0.5">Account synced with Firestore Secure Cloud</p>
+                  </div>
                 </div>
+                <span className="px-4 py-1.5 rounded-xl bg-emerald-500/10 text-emerald-400 text-[9px] font-black uppercase tracking-[0.2em] border border-emerald-500/20">VERIFIED</span>
               </div>
 
-              <div className="security-item p-4 mb-3 border-hover">
-                <div className="d-flex justify-content-between align-items-center">
-                  <div className="d-flex align-items-center">
-                    <div className="icon-box-xs bg-indigo-soft me-3">
-                      <Key size={16} className="text-indigo" />
-                    </div>
-                    <div>
-                      <h6 className="text-white fw-bold mb-0">Access Key</h6>
-                      <p className="text-secondary extra-small mb-0">Rotate encryption keys for account recovery</p>
-                    </div>
+              {/* Access Key */}
+              <div className="flex items-center justify-between p-5 rounded-2xl bg-glass-bg/50 border border-glass-border hover:border-indigo-500/30 transition-all group">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 group-hover:bg-indigo-500 group-hover:text-white transition-all">
+                    <Key className="w-5 h-5" />
                   </div>
-                  <button className="btn-glass py-2 px-3 small">Update Key</button>
+                  <div>
+                    <h6 className="font-black text-text-main uppercase tracking-tight">Access Key</h6>
+                    <p className="text-text-muted text-xs mt-0.5">Rotate encryption keys for account recovery</p>
+                  </div>
                 </div>
+                <button className="px-5 py-2.5 rounded-xl bg-glass-bg border border-glass-border text-text-muted hover:text-white hover:border-indigo-500/50 transition-all font-black text-[10px] uppercase tracking-widest">
+                  Update Key
+                </button>
               </div>
 
-              <div className="security-item p-4 border-hover">
-                <div className="d-flex justify-content-between align-items-center">
-                  <div className="d-flex align-items-center">
-                    <div className="icon-box-xs bg-amber-soft me-3">
-                      <Lock size={16} className="text-amber" />
-                    </div>
-                    <div>
-                      <h6 className="text-white fw-bold mb-0">Two-Factor Passcode</h6>
-                      <p className="text-secondary extra-small mb-0">Add an extra layer of authentication</p>
-                    </div>
+              {/* Two-Factor */}
+              <div className="flex items-center justify-between p-5 rounded-2xl bg-glass-bg/50 border border-glass-border hover:border-amber-500/30 transition-all group">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400 border border-amber-500/20 group-hover:bg-amber-500 group-hover:text-white transition-all">
+                    <Lock className="w-5 h-5" />
                   </div>
-                  <div className="form-toggle-glass">
-                    <input type="checkbox" id="2fa-toggle" />
-                    <label htmlFor="2fa-toggle"></label>
+                  <div>
+                    <h6 className="font-black text-text-main uppercase tracking-tight">Two-Factor Passcode</h6>
+                    <p className="text-text-muted text-xs mt-0.5">Add an extra layer of authentication</p>
                   </div>
                 </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" className="sr-only peer" />
+                  <div className="w-11 h-6 bg-glass-bg border border-glass-border rounded-full peer peer-checked:bg-amber-500 peer-checked:border-amber-400 transition-all after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:after:translate-x-5"></div>
+                </label>
+              </div>
+
+              {/* Security Shield */}
+              <div className="flex items-center justify-between p-5 rounded-2xl bg-glass-bg/50 border border-glass-border hover:border-blue-500/30 transition-all group">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400 border border-blue-500/20 group-hover:bg-blue-500 group-hover:text-white transition-all">
+                    <ShieldCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h6 className="font-black text-text-main uppercase tracking-tight">Security Shield</h6>
+                    <p className="text-text-muted text-xs mt-0.5">Active threat detection and monitoring</p>
+                  </div>
+                </div>
+                <span className="px-4 py-1.5 rounded-xl bg-blue-500/10 text-blue-400 text-[9px] font-black uppercase tracking-[0.2em] border border-blue-500/20 flex items-center gap-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></div>
+                  ACTIVE
+                </span>
               </div>
             </div>
           </div>
@@ -305,4 +363,3 @@ const Profile = ({ currentUser }) => {
 };
 
 export default Profile;
-

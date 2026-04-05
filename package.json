@@ -20,5 +20,10 @@
   "bugs": {
     "url": "https://github.com/sriaakash06/COLLEGE-ERP-SYSTEM/issues"
   },
-  "homepage": "https://github.com/sriaakash06/COLLEGE-ERP-SYSTEM#readme"
+  "homepage": "https://github.com/sriaakash06/COLLEGE-ERP-SYSTEM#readme",
+  "devDependencies": {
+    "autoprefixer": "^10.4.27",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^4.2.2"
+  }
 }

@@ -10,15 +10,14 @@ import {
 } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 
-// IMPORTANT: Replace the following config with your actual Firebase project configuration
-// from the Firebase Console: Project Settings -> General -> Your apps -> Web app.
+// IMPORTANT: Configuration is now loaded securely from the .env file
 const firebaseConfig = {
-  apiKey: "AIzaSyC7kJ3vZSMc6DVqjunDqjI3-ttkS1e568o",
-  authDomain: "college-erp-project-2026-67890.firebaseapp.com",
-  projectId: "college-erp-project-2026-67890",
-  storageBucket: "college-erp-project-2026-67890.firebasestorage.app",
-  messagingSenderId: "436696372190",
-  appId: "1:436696372190:web:c982aed59a473e9c32834f"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
 
 // Initialize Firebase

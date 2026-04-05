@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { db } from '../firebase';
+import { doc, getDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { 
   User, 
   Mail, 
@@ -11,7 +13,6 @@ import {
   Camera, 
   CheckCircle, 
   AtSign,
-  IdCard,
   CreditCard,
   Briefcase,
   Calendar,
@@ -194,7 +195,11 @@ const Profile = ({ currentUser }) => {
                     <label className="premium-label">Secure Contact Node</label>
                     <div className="input-group-glass">
                       <Phone size={18} />
-                      <input value={profile?.phone || ''} placeholder="+1 (555) 000-0000" />
+                      <input 
+                        value={profile?.phone || ''} 
+                        placeholder="+1 (555) 000-0000" 
+                        onChange={(e) => setProfile({...profile, phone: e.target.value})}
+                      />
                     </div>
                   </div>
                   <div className="col-12">
@@ -206,6 +211,7 @@ const Profile = ({ currentUser }) => {
                         value={profile?.address || ''} 
                         placeholder="Current residential address..."
                         rows={2}
+                        onChange={(e) => setProfile({...profile, address: e.target.value})}
                       />
                     </div>
                   </div>

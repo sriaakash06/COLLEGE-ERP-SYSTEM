@@ -141,7 +141,8 @@ const Students = () => {
 
   const filteredStudents = students.filter(s => 
     (filterCrs === 'All' || s.course_id === filterCrs) &&
-    (s.name.toLowerCase().includes(search.toLowerCase()) || s.roll_no.toLowerCase().includes(search.toLowerCase()))
+    ((s.name?.toLowerCase() || '').includes(search.toLowerCase()) || 
+     (s.roll_no?.toLowerCase() || '').includes(search.toLowerCase()))
   );
 
   return (

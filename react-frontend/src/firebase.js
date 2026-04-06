@@ -6,7 +6,8 @@ import {
   signOut, 
   onAuthStateChanged,
   signInWithEmailAndPassword,
-  createUserWithEmailAndPassword
+  createUserWithEmailAndPassword,
+  updateProfile
 } from 'firebase/auth';
 import { getFirestore, doc, getDoc, setDoc, serverTimestamp, updateDoc } from 'firebase/firestore';
 
@@ -36,7 +37,7 @@ export const storeUserProfile = async (user, additionalData = {}) => {
   if (!userSnap.exists()) {
     await setDoc(userRef, {
       uid: user.uid,
-      name: user.displayName || 'EduCloud User',
+      name: additionalData.name || user.displayName || 'EduCloud User',
       email: user.email,
       photoURL: user.photoURL || '',
       role: 'Student', // Default role
@@ -67,6 +68,17 @@ export const signInWithGoogle = async () => {
 export const loginWithEmail = async (email, password) => {
   const result = await signInWithEmailAndPassword(auth, email, password);
   await storeUserProfile(result.user);
+  return result.user;
+};
+
+// Email/Password Sign-Up helper
+export const signUpWithEmail = async (email, password, username) => {
+  const result = await createUserWithEmailAndPassword(auth, email, password);
+  if (username) {
+    await updateProfile(result.user, { displayName: username });
+    result.user.displayName = username; // Update local ref
+  }
+  await storeUserProfile(result.user, { name: username });
   return result.user;
 };
 

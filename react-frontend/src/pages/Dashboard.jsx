@@ -143,15 +143,15 @@ const Dashboard = () => {
           <div>
             <div className="flex items-center gap-4 flex-wrap">
               <h1 className="font-headline text-5xl lg:text-7xl font-bold text-on-surface tracking-tighter uppercase italic leading-none">
-                COMMAND CENTER
+                DASHBOARD
               </h1>
               <span className="px-4 py-1.5 bg-primary/10 border border-primary/20 rounded-full text-[10px] font-bold text-primary tracking-widest uppercase">
-                System v4.0
+                Admin Panel
               </span>
             </div>
             <p className="text-on-surface-variant mt-4 font-bold text-[10px] uppercase tracking-[0.4em] flex items-center gap-3">
-              <span className="material-symbols-outlined text-success text-base">sensors</span>
-              Institutional Nexus &bull; Node: {window.location.hostname}
+              <span className="material-symbols-outlined text-success text-base">domain</span>
+              College Management System &bull; {window.location.hostname}
             </p>
           </div>
         </div>
@@ -162,8 +162,8 @@ const Dashboard = () => {
               <span className="material-symbols-outlined text-primary text-xl">speed</span>
             </div>
             <div>
-              <p className="text-[9px] font-bold uppercase tracking-widest text-on-surface-variant">Neural Latency</p>
-              <p className="text-lg font-bold text-on-surface">0.24<span className="text-xs opacity-50 ml-1">ms</span></p>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-on-surface-variant">Response Time</p>
+              <p className="text-lg font-bold text-on-surface">24.5<span className="text-xs opacity-50 ml-1">ms</span></p>
             </div>
           </div>
 
@@ -172,9 +172,9 @@ const Dashboard = () => {
               <span className="material-symbols-outlined text-success text-xl">cloud_sync</span>
             </div>
             <div>
-              <p className="text-[9px] font-bold uppercase tracking-widest text-on-surface-variant">Cloud Sync</p>
+              <p className="text-[9px] font-bold uppercase tracking-widest text-on-surface-variant">Database Sync</p>
               <p className="text-lg font-bold text-on-surface uppercase italic">
-                {syncStatus === 'online' ? 'Hyper-Active' : 'Degraded'}
+                {syncStatus === 'online' ? 'Online' : 'Offline'}
               </p>
             </div>
           </div>
@@ -185,36 +185,32 @@ const Dashboard = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
           {
-            label: 'Active Learners',
+            label: 'Total Students',
             val: data.stats.total_students,
             icon: 'group',
             color: 'primary',
-            desc: 'Total Student Count',
-            trend: '+14% concurrent rise',
+            desc: 'Registered Students',
           },
           {
-            label: 'Neural Experts',
+            label: 'Faculty Members',
             val: data.stats.total_faculty,
             icon: 'badge',
             color: 'secondary',
-            desc: 'Active Faculty Members',
-            trend: 'Verified status active',
+            desc: 'Active Staff',
           },
           {
-            label: 'Knowledge Tracks',
+            label: 'Total Courses',
             val: data.stats.total_courses,
             icon: 'menu_book',
             color: 'primary',
-            desc: 'Available Courses',
-            trend: '9 newly deployed',
+            desc: 'Available Departments',
           },
           {
-            label: 'Protocol Signals',
+            label: 'Active Notices',
             val: data.stats.active_notices,
             icon: 'campaign',
             color: 'secondary',
-            desc: 'Live Bulletins',
-            trend: 'Review required',
+            desc: 'Recent Announcements',
           },
         ].map((stat, i) => (
           <div key={i} className="group relative">
@@ -253,15 +249,15 @@ const Dashboard = () => {
                   <div className="absolute -top-1 -right-1 w-3 h-3 bg-primary rounded-full"></div>
                 </div>
                 <div>
-                  <h3 className="font-headline text-3xl font-bold tracking-tight text-on-surface uppercase italic">SIGNAL BROADCASTS</h3>
-                  <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.3em] mt-1 opacity-60">High-Priority Institutional Transmissions</p>
+                  <h3 className="font-headline text-3xl font-bold tracking-tight text-on-surface uppercase italic">COLLEGE NOTICES</h3>
+                  <p className="text-[10px] font-bold text-on-surface-variant uppercase tracking-[0.3em] mt-1 opacity-60">Latest Announcements & Updates</p>
                 </div>
               </div>
               <button
                 onClick={() => navigate('/notices')}
                 className="px-8 py-3.5 bg-primary/10 border border-primary/20 text-primary rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-primary/20 transition-all active:scale-95"
               >
-                View All Signals
+                View All Notices
               </button>
             </div>
 
@@ -290,9 +286,9 @@ const Dashboard = () => {
                 ))
               ) : (
                 <div className="py-32 flex flex-col items-center opacity-30 text-center">
-                  <span className="material-symbols-outlined text-6xl text-primary mb-6 animate-float">signal_disconnected</span>
-                  <p className="text-xl font-bold uppercase tracking-widest">Quiet Frequency Detected</p>
-                  <p className="text-[10px] mt-2 font-bold uppercase tracking-[0.2em]">No notices found in Firestore</p>
+                  <span className="material-symbols-outlined text-6xl text-primary mb-6 animate-float">notifications_off</span>
+                  <p className="text-xl font-bold uppercase tracking-widest">No Active Notices</p>
+                  <p className="text-[10px] mt-2 font-bold uppercase tracking-[0.2em]">There are no recent announcements.</p>
                 </div>
               )}
             </div>
@@ -307,13 +303,13 @@ const Dashboard = () => {
                   <span className="material-symbols-outlined text-3xl text-on-surface">shield_locked</span>
                 </div>
                 <div>
-                  <h2 className="font-headline text-2xl font-bold text-on-surface uppercase italic">SECURITY CORE</h2>
+                  <h2 className="font-headline text-2xl font-bold text-on-surface uppercase italic">SYSTEM SECURITY</h2>
                   <p className="text-on-surface-variant text-sm font-medium mt-1 leading-relaxed">
-                    Multi-layered encryption active. Neural firewalls operational.
+                    All institutional data is secured with enterprise-grade encryption.
                   </p>
                 </div>
                 <button className="w-fit px-6 py-2.5 bg-on-surface border border-background text-background font-bold text-[10px] uppercase tracking-widest rounded-2xl hover:bg-primary hover:text-white transition-all">
-                  Security Protocol
+                  View Settings
                 </button>
               </div>
             </div>
@@ -325,13 +321,13 @@ const Dashboard = () => {
                   <span className="material-symbols-outlined text-3xl text-white" style={{ fontVariationSettings: "'FILL' 1" }}>hub</span>
                 </div>
                 <div>
-                  <h2 className="font-headline text-2xl font-bold uppercase italic">NETWORK RELAY</h2>
+                  <h2 className="font-headline text-2xl font-bold uppercase italic">DATABASE BACKUP</h2>
                   <p className="text-white/80 text-sm font-medium mt-1 leading-relaxed">
-                    Institutional data matrix synchronized with core global clusters.
+                    Cloud database is synced in real-time to prevent data loss.
                   </p>
                 </div>
                 <button className="w-fit px-6 py-2.5 bg-white text-primary font-bold text-[10px] uppercase tracking-widest rounded-2xl hover:bg-on-surface hover:text-white transition-all">
-                  Pulse Sync
+                  Sync Now
                 </button>
               </div>
             </div>
@@ -345,8 +341,8 @@ const Dashboard = () => {
           <div className="bg-surface-container rounded-[2.5rem] border border-outline-variant/20 p-10 shadow-xl group">
             <div className="flex items-center justify-between mb-10">
               <h3 className="font-headline text-lg font-bold italic uppercase tracking-tight text-on-surface flex items-center gap-3">
-                <span className="material-symbols-outlined text-2xl text-success" style={{ fontVariationSettings: "'FILL' 1" }}>vital_signs</span>
-                SYSTEM VIABILITY
+                <span className="material-symbols-outlined text-2xl text-success" style={{ fontVariationSettings: "'FILL' 1" }}>health_and_safety</span>
+                SYSTEM HEALTH
               </h3>
               <div className="px-4 py-1 bg-success/10 text-success text-[8px] font-bold rounded-lg border border-success/20 tracking-widest">OPTIMIZED</div>
             </div>
@@ -354,9 +350,9 @@ const Dashboard = () => {
             <div className="space-y-8 w-full">
               {[
                 { label: 'Database Integrity', val: '98.8%', progress: '98%' },
-                { label: 'Neural Throughput', val: '1.2 GB/s', progress: '85%' },
-                { label: 'Kernel Stability', val: '99.9%', progress: '100%' },
-                { label: 'Memory Allocation', val: 'ACTIVE', progress: '72%' },
+                { label: 'Network Speed', val: '1.2 GB/s', progress: '85%' },
+                { label: 'Server Uptime', val: '99.9%', progress: '100%' },
+                { label: 'Resource Usage', val: 'NORMAL', progress: '72%' },
               ].map((node, i) => (
                 <div key={i} className="space-y-3 group/node">
                   <div className="flex justify-between items-end">

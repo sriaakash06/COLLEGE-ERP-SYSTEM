@@ -1,31 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
-  UserRound, 
-  Search, 
-  Plus, 
-  Mail, 
-  Phone, 
-  Briefcase, 
-  Building2, 
-  UserCheck, 
-  Trash2, 
-  Edit3, 
-  Filter, 
-  MoreVertical, 
-  Download, 
-  ShieldCheck, 
-  Clock, 
-  Globe,
-  Database,
-  Cpu,
-  Monitor,
-  Zap,
-  ChevronRight,
-  Layers,
-  Activity,
-  Fingerprint
+  UserRound, Search, Plus, Mail, Phone, Briefcase, Building2, UserCheck, 
+  Trash2, Edit3, Download, ShieldCheck, Clock, Database, ChevronRight, 
+  Layers, Activity, Fingerprint, X
 } from 'lucide-react';
+import './Staff.css';
 
 const Staff = () => {
   const [staff, setStaff] = useState([]);
@@ -35,15 +15,9 @@ const Staff = () => {
   const [showModal, setShowModal] = useState(false);
   const [filterDep, setFilterDep] = useState('All');
   
-  // Registration Form State
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    role: 'Staff',
-    department_id: '',
-    phone: '',
-    qualification: '',
-    joining_date: new Date().toISOString().split('T')[0]
+    name: '', email: '', role: 'Staff', department_id: '',
+    phone: '', qualification: '', joining_date: new Date().toISOString().split('T')[0]
   });
 
   useEffect(() => {
@@ -57,7 +31,7 @@ const Staff = () => {
       const res = await axios.get('/api/staff/data');
       if (res.data.success) setStaff(res.data.staff);
     } catch (err) {
-      console.error('Staff fetch failed');
+      console.error('Staff sync failed');
     } finally {
       setLoading(false);
     }
@@ -77,19 +51,18 @@ const Staff = () => {
       if (res.data.success) {
         setShowModal(false);
         fetchStaff();
-        setFormData({
-          name: '',
-          email: '',
-          role: 'Staff',
-          department_id: '',
-          phone: '',
-          qualification: '',
-          joining_date: new Date().toISOString().split('T')[0]
-        });
+        resetForm();
       }
     } catch (err) {
-      alert('Registration failed: Email already exists or server error');
+      alert('Onboarding failed: Server error or identity conflict');
     }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      name: '', email: '', role: 'Staff', department_id: '',
+      phone: '', qualification: '', joining_date: new Date().toISOString().split('T')[0]
+    });
   };
 
   const filteredStaff = staff.filter(s => 
@@ -98,267 +71,208 @@ const Staff = () => {
   );
 
   return (
-    <div className="p-4 md:p-8 space-y-8 animate-fade-in">
-      {/* Header Section */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-        <div className="flex items-center gap-6">
-          <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shadow-lg shadow-indigo-500/10 relative overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <UserRound className="w-8 h-8 text-indigo-400 group-hover:scale-110 transition-transform" />
+    <div className="staff-root">
+      
+      {/* ── Header ── */}
+      <div className="staff-header">
+        <div className="staff-header-meta">
+          <div className="staff-icon-box">
+            <UserRound className="w-8 h-8 text-primary" />
           </div>
           <div>
-            <h1 className="text-3xl md:text-4xl font-black text-gradient-primary tracking-tight italic">PERSONNEL HUB</h1>
-            <p className="text-text-muted mt-1 font-medium flex items-center gap-2">
+            <h1 className="text-4xl font-bold text-white tracking-tight">Personnel Hub</h1>
+            <p className="header-location">
               <Activity className="w-4 h-4 text-emerald-400" />
-              Institutional human resource and deployment matrix
+              Institutional Human Resource Management
             </p>
           </div>
         </div>
         
         <div className="flex items-center gap-4">
-          <button className="p-4 rounded-xl bg-glass-bg border border-glass-border text-text-muted hover:text-white hover:shadow-[0_0_15px_rgba(99,102,241,0.2)] transition-all">
-            <Download className="w-5 h-5" />
-          </button>
-          <button 
-            onClick={() => setShowModal(true)}
-            className="btn-premium px-8 py-4 rounded-2xl flex items-center gap-3 active:scale-95 transition-transform"
-          >
-            <Plus className="w-5 h-5" />
-            <span className="font-black tracking-[0.1em] text-[10px]">ONBOARD FACULTY</span>
+          <button className="control-btn"><Download size={18} /></button>
+          <button onClick={() => { resetForm(); setShowModal(true); }} className="onboard-btn">
+            <Plus size={18} />
+            Onboard Faculty
           </button>
         </div>
       </div>
 
-      {/* Persistence Analytics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      {/* ── Metrics ── */}
+      <div className="staff-analytics">
         {[
-          { label: 'Active Deployment', val: staff.length, icon: UserCheck, color: 'emerald', detail: 'Personnel Online' },
-          { label: 'Sectors Active', val: departments.length, icon: Layers, color: 'indigo', detail: 'Institutional Units' },
-          { label: 'Admin Override', val: staff.filter(s => s.role === 'admin').length, icon: ShieldCheck, color: 'amber', detail: 'Privileged Access' },
-          { label: 'System Uptime', val: '99.9%', icon: Activity, color: 'rose', detail: 'Registry: Nominal' }
+          { label: 'Active Personnel', val: staff.length, icon: UserCheck, color: 'emerald' },
+          { label: 'Departments', val: departments.length, icon: Layers, color: 'indigo' },
+          { label: 'Admin Tier', val: staff.filter(s => s.role === 'Admin').length, icon: ShieldCheck, color: 'amber' },
+          { label: 'System Uptime', val: '100%', icon: Activity, color: 'rose' }
         ].map((stat, i) => (
-          <div key={i} className="glass-card p-6 group hover:translate-y-[-4px] transition-all">
-            <div className="flex items-center justify-between mb-4">
-              <div className={`p-3 rounded-xl bg-${stat.color}-500/10 text-${stat.color}-400 ring-1 ring-${stat.color}-500/20`}>
-                <stat.icon className="w-6 h-6" />
-              </div>
-              <div className="px-2 py-1 rounded-md bg-glass-bg border border-glass-border text-[8px] font-black text-text-muted uppercase tracking-widest">
-                Real-Time
-              </div>
+          <div key={i} className="staff-analytic-card">
+            <div className="analytic-icon-box">
+              <stat.icon size={20} className="text-primary" />
             </div>
-            <div>
-              <p className="text-[10px] uppercase font-black text-text-muted tracking-widest mb-1">{stat.label}</p>
-              <p className="text-2xl font-black text-text-main group-hover:text-indigo-400 transition-colors tracking-tight italic">
-                 {stat.val}
-              </p>
-              <p className={`text-[10px] font-bold text-${stat.color}-400/80 mt-1 uppercase italic`}>{stat.detail}</p>
-            </div>
+            <p className="text-[10px] uppercase font-bold text-slate-500 mb-1 tracking-widest">{stat.label}</p>
+            <h3 className="text-3xl font-bold text-white mb-2">{stat.val}</h3>
+            <div className="stat-desc-box">Operational Connectivity</div>
           </div>
         ))}
       </div>
 
-      {/* Control Terminal */}
-      <div className="flex flex-col lg:flex-row gap-6 items-center">
-        <div className="relative flex-1 w-full group">
-          <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-text-muted/40 group-focus-within:text-indigo-400 transition-colors" />
+      {/* ── Filters ── */}
+      <div className="staff-terminal">
+        <div className="staff-search-wrapper">
+          <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" />
           <input 
             type="text" 
-            placeholder="Search by identity vector or credential..." 
-            className="input-group-glass !pl-14 h-14 w-full"
+            placeholder="Search personnel directory..." 
+            className="staff-search-input"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="bg-glass-bg/50 p-1.5 rounded-2xl border border-glass-border flex gap-1 overflow-x-auto whitespace-nowrap scrollbar-none w-full lg:w-auto">
+        <div className="staff-filter-bar scrollbar-hide">
           <button 
             onClick={() => setFilterDep('All')}
-            className={`px-6 py-3 rounded-xl transition-all font-black text-[10px] tracking-widest ${filterDep === 'All' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-text-muted hover:text-text-main hover:bg-glass-bg'}`}
+            className={`staff-filter-btn ${filterDep === 'All' ? 'active' : ''}`}
           >
-            UNIVERSAL
+            Universal
           </button>
           {departments.map(d => (
             <button 
               key={d.id}
               onClick={() => setFilterDep(d.id)}
-              className={`px-6 py-3 rounded-xl transition-all font-black text-[10px] tracking-widest ${filterDep === d.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20' : 'text-text-muted hover:text-text-main hover:bg-glass-bg'}`}
+              className={`staff-filter-btn ${filterDep === d.id ? 'active' : ''}`}
             >
-              {d.name.split(' ')[0].toUpperCase()}
+              {d.name.split(' ')[0]}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Resource Matrix */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      {/* ── Staff Records ── */}
+      <div className="staff-grid">
         {loading ? (
           Array(8).fill(0).map((_, i) => (
-            <div key={i} className="glass-card h-64 animate-pulse opacity-50"></div>
+            <div key={i} className="staff-card animate-pulse opacity-40"></div>
           ))
         ) : filteredStaff.length > 0 ? (
           filteredStaff.map((s) => (
-            <div key={s.id} className="glass-card group p-6 hover:translate-y-[-4px] transition-all relative overflow-hidden flex flex-col border-b-4 border-b-indigo-500/20 hover:border-b-indigo-500">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-indigo-500/10 transition-all"></div>
-              
-              <div className="flex items-center gap-4 mb-6 relative z-10">
-                <div className="w-14 h-14 rounded-2xl bg-indigo-500/10 flex items-center justify-center text-2xl font-black text-indigo-400 border border-indigo-500/20 shadow-inner group-hover:bg-indigo-500 group-hover:text-white transition-all transform group-hover:rotate-6">
-                  {s.name.charAt(0)}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-black text-text-main text-lg truncate tracking-tight uppercase italic group-hover:text-indigo-400 transition-colors">{s.name}</h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></div>
-                    <span className="text-[9px] font-black uppercase tracking-widest text-text-muted">{s.role}</span>
+            <div key={s.id} className="staff-card">
+              <div className="staff-card-header">
+                <div className="staff-avatar">{s.name.charAt(0)}</div>
+                <div className="staff-info">
+                  <h3 className="staff-name">{s.name}</h3>
+                  <div className="staff-role-badge">
+                    <UserCheck size={12} className="text-primary" />
+                    {s.role}
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-4 flex-1 relative z-10">
-                <div className="flex items-center gap-3 text-sm text-text-muted group-hover:text-text-main transition-colors group/item">
-                  <div className="w-8 h-8 rounded-lg bg-glass-bg border border-glass-border flex items-center justify-center group-hover/item:text-indigo-400 transition-colors">
-                    <Mail className="w-4 h-4" />
-                  </div>
-                  <span className="truncate flex-1 font-bold italic text-xs">{s.email}</span>
+              <div className="staff-details">
+                <div className="detail-item">
+                  <div className="detail-item-icon"><Mail size={14} /></div>
+                  <span className="truncate">{s.email}</span>
                 </div>
-                <div className="flex items-center gap-3 text-sm text-text-muted group-hover:text-text-main transition-colors group/item">
-                  <div className="w-8 h-8 rounded-lg bg-glass-bg border border-glass-border flex items-center justify-center group-hover/item:text-blue-400 transition-colors">
-                    <Building2 className="w-4 h-4" />
-                  </div>
-                  <span className="truncate flex-1 font-bold text-[10px] uppercase tracking-widest">
-                    {departments.find(d => d.id === s.department_id)?.name || 'Central Unit'}
+                <div className="detail-item">
+                  <div className="detail-item-icon"><Building2 size={14} /></div>
+                  <span className="truncate">
+                    {departments.find(d => d.id === s.department_id)?.name || 'Central Admin'}
                   </span>
                 </div>
                 {s.phone && (
-                  <div className="flex items-center gap-3 text-sm text-text-muted group-hover:text-text-main transition-colors group/item">
-                    <div className="w-8 h-8 rounded-lg bg-glass-bg border border-glass-border flex items-center justify-center group-hover/item:text-amber-400 transition-colors">
-                      <Phone className="w-4 h-4" />
-                    </div>
-                    <span className="truncate flex-1 font-mono text-xs">{s.phone}</span>
+                  <div className="detail-item">
+                    <div className="detail-item-icon"><Phone size={14} /></div>
+                    <span>{s.phone}</span>
                   </div>
                 )}
               </div>
 
-              <div className="mt-8 pt-6 border-t border-glass-border flex items-center justify-between relative z-10">
+              <div className="staff-card-footer">
                 <div className="flex flex-col">
-                  <span className="text-[8px] font-black text-text-muted uppercase tracking-[0.2em] mb-1">DEPLOYED ON</span>
-                  <span className="text-[10px] font-bold text-text-main italic tracking-tighter">
-                    {new Date(s.timestamp?.seconds * 1000).toLocaleDateString()}
-                  </span>
+                  <span className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Joining Date</span>
+                  <span className="staff-date">{new Date(s.timestamp?.seconds * 1000).toLocaleDateString()}</span>
                 </div>
                 <div className="flex gap-2">
-                  <button className="p-2.5 rounded-lg bg-glass-bg border border-glass-border text-text-muted hover:text-indigo-400 hover:border-indigo-500/30 transition-all hover:shadow-[0_0_10px_rgba(99,102,241,0.2)]">
-                    <Edit3 className="w-4 h-4" />
-                  </button>
-                  <button className="p-2.5 rounded-lg bg-glass-bg border border-glass-border text-text-muted hover:text-rose-400 hover:border-rose-500/30 transition-all hover:shadow-[0_0_10px_rgba(244,63,94,0.2)]">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <button className="control-btn"><Edit3 size={14} /></button>
+                  <button className="control-btn delete"><Trash2 size={14} /></button>
                 </div>
               </div>
             </div>
           ))
         ) : (
-          <div className="col-span-full py-48 glass-card border-dashed flex flex-col items-center justify-center opacity-30 text-center">
-            <div className="w-20 h-20 rounded-full bg-glass-bg flex items-center justify-center mb-6 border border-glass-border">
-              <Database className="w-10 h-10" />
-            </div>
-            <h3 className="text-xl font-black italic uppercase tracking-widest">No Persistence Vectors Detected</h3>
-            <p className="text-sm font-medium mt-2">Adjust search parameters or initialize new onboarding session</p>
+          <div className="col-span-full py-48 text-center opacity-20">
+            <Database size={64} className="mx-auto mb-4" />
+            <h3 className="text-xl font-bold uppercase tracking-widest">No matching personnel records</h3>
           </div>
         )}
       </div>
 
-      {/* Onboarding Operational Modal */}
+      {/* ── Onboarding Modal ── */}
       {showModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xl animate-fade-in">
-          <div className="glass-card w-full max-w-2xl p-8 md:p-12 border-2 border-indigo-500/20 animate-scale-in relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 rounded-full -mr-32 -mt-32 blur-3xl"></div>
-            
-            <div className="flex items-center gap-6 mb-12 relative z-10">
-              <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20 shadow-lg text-indigo-400">
-                <Fingerprint className="w-8 h-8" />
+        <div className="onboard-modal-overlay" onClick={() => setShowModal(false)}>
+          <div className="onboard-modal" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-12">
+              <div className="staff-header-meta">
+                <div className="staff-icon-box"><Fingerprint size={32} /></div>
+                <div>
+                  <h2 className="text-3xl font-bold text-white">Personnel Onboarding</h2>
+                  <p className="text-primary text-[10px] font-bold uppercase tracking-widest mt-1">Official Resource Registration</p>
+                </div>
               </div>
-              <div>
-                <h2 className="text-3xl font-black italic text-gradient-primary tracking-tight">FACULTY ONBOARDING HUB</h2>
-                <p className="text-[10px] font-black text-text-muted uppercase tracking-[0.3em] mt-1">Initializing Personnel Credential Session</p>
-              </div>
+              <button onClick={() => setShowModal(false)} className="control-btn"><X size={20} /></button>
             </div>
             
-            <form onSubmit={handleRegister} className="grid grid-cols-1 md:grid-cols-2 gap-8 relative z-10">
-              <div className="space-y-3 col-span-full md:col-span-1">
-                <label className="text-[10px] uppercase font-black text-text-muted tracking-[0.2em] pl-1 flex items-center gap-2">
-                  <UserRound className="w-3 h-3 text-indigo-400" /> Legal Persona
-                </label>
-                <div className="input-group-glass">
-                  <input 
-                    type="text" 
-                    placeholder="FULL LEGAL ENTITY NAME"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  />
-                </div>
+            <form onSubmit={handleRegister} className="form-grid">
+              <div className="input-field-group">
+                <label className="input-label">Full Legal Persona</label>
+                <input 
+                  className="input-control" type="text" placeholder="Identity Name" required
+                  value={formData.name} onChange={(e) => setFormData({...formData, name: e.target.value})}
+                />
               </div>
-              
-              <div className="space-y-3 col-span-full md:col-span-1">
-                <label className="text-[10px] uppercase font-black text-text-muted tracking-[0.2em] pl-1 flex items-center gap-2">
-                  <Mail className="w-3 h-3 text-indigo-400" /> Institutional Sync ID
-                </label>
-                <div className="input-group-glass">
-                  <input 
-                    type="email" 
-                    placeholder="EMAIL@COLLEGE.DOMAIN"
-                    required
-                    value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  />
-                </div>
+              <div className="input-field-group">
+                <label className="input-label">Institutional Relay (Email)</label>
+                <input 
+                  className="input-control" type="email" placeholder="email@college.edu" required
+                  value={formData.email} onChange={(e) => setFormData({...formData, email: e.target.value})}
+                />
               </div>
-
-              <div className="space-y-3">
-                <label className="text-[10px] uppercase font-black text-text-muted tracking-[0.2em] pl-1 flex items-center gap-2">
-                  <Layers className="w-3 h-3 text-indigo-400" /> Functional Sector
-                </label>
-                <div className="input-group-glass">
-                  <select 
-                    required
-                    value={formData.department_id}
-                    onChange={(e) => setFormData({...formData, department_id: e.target.value})}
-                  >
-                    <option value="">SELECT DEPARTMENT...</option>
-                    {departments.map(d => <option key={d.id} value={d.id}>{d.name.toUpperCase()}</option>)}
-                  </select>
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                <label className="text-[10px] uppercase font-black text-text-muted tracking-[0.2em] pl-1 flex items-center gap-2">
-                  <Zap className="w-3 h-3 text-indigo-400" /> Access Tier
-                </label>
-                <div className="input-group-glass">
-                  <select 
-                    value={formData.role}
-                    onChange={(e) => setFormData({...formData, role: e.target.value})}
-                  >
-                    <option value="Staff">FACULTY / STAFF</option>
-                    <option value="Admin">ADMINISTRATIVE / OVERSIGHT</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="col-span-full flex flex-col sm:flex-row justify-end gap-6 mt-12 pt-8 border-t border-glass-border">
-                <button 
-                  type="button" 
-                  onClick={() => setShowModal(false)}
-                  className="px-8 py-3 text-text-muted/40 font-black uppercase tracking-widest text-[10px] hover:text-white transition-all order-2 sm:order-1"
+              <div className="input-field-group">
+                <label className="input-label">Functional Sector</label>
+                <select 
+                  className="input-control" required
+                  value={formData.department_id} onChange={(e) => setFormData({...formData, department_id: e.target.value})}
                 >
-                  TERMINAL ABORT
-                </button>
-                <button 
-                  type="submit" 
-                  className="btn-premium px-16 py-4 rounded-2xl flex items-center justify-center gap-4 group order-1 sm:order-2"
+                  <option value="">Select Domain...</option>
+                  {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                </select>
+              </div>
+              <div className="input-field-group">
+                <label className="input-label">Access Tier</label>
+                <select 
+                  className="input-control"
+                  value={formData.role} onChange={(e) => setFormData({...formData, role: e.target.value})}
                 >
-                  <UserCheck className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                  <span className="font-black tracking-[0.1em] text-xs">VALIDATE ONBOARDING</span>
-                </button>
+                  <option value="Staff">Faculty / Academic</option>
+                  <option value="Admin">Administrative Overseer</option>
+                </select>
+              </div>
+              <div className="input-field-group">
+                <label className="input-label">Qualification</label>
+                <input 
+                  className="input-control" type="text" placeholder="Ph.D / Master / etc."
+                  value={formData.qualification} onChange={(e) => setFormData({...formData, qualification: e.target.value})}
+                />
+              </div>
+              <div className="input-field-group">
+                <label className="input-label">Vocal Link (Phone)</label>
+                <input 
+                  className="input-control" type="text" placeholder="+1 XXX XXX XXXX"
+                  value={formData.phone} onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                />
+              </div>
+
+              <div className="col-span-2 flex justify-end gap-4 mt-8 pt-8 border-t border-white/5">
+                <button type="submit" className="onboard-btn">Confirm Personnel Deployment</button>
               </div>
             </form>
           </div>
